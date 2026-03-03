@@ -1,0 +1,321 @@
+DENTAL PRACTICE MANAGEMENT SYSTEM
+END-USER LICENSE AGREEMENT (EULA)
+
+Version 1.0 - Effective Date: February 2024
+
+IMPORTANT - READ CAREFULLY:
+
+This End-User License Agreement ("Agreement") is a legal agreement between you (either an individual or a single entity, "Licensee," "You," or "Your") and [YOUR COMPANY NAME] ("Licensor," "We," "Us," or "Our") for the Dental Practice Management System software product, which includes computer software and may include associated media, printed materials, and electronic documentation (collectively, the "Software").
+
+BY INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, DO NOT INSTALL OR USE THE SOFTWARE AND RETURN IT TO YOUR PLACE OF PURCHASE FOR A FULL REFUND.
+
+═══════════════════════════════════════════════════════════════════════
+
+1. GRANT OF LICENSE
+
+Subject to the terms and conditions of this Agreement and payment of all applicable fees, Licensor grants to Licensee a non-exclusive, non-transferable license to:
+
+1.1 Install and use the Software on a single server or hosting environment per purchased license.
+
+1.2 Access the Software's source code for the purpose of customization, bug fixes, and modifications to meet Licensee's specific requirements.
+
+1.3 Make reasonable modifications to the Software to integrate with Licensee's existing systems and workflows.
+
+1.4 Create backup copies of the Software for archival purposes only.
+
+═══════════════════════════════════════════════════════════════════════
+
+2. LICENSE TYPES
+
+The Software is available under three license types:
+
+2.1 STANDARD LICENSE ($7,999)
+    - Single clinic installation
+    - Support for 1-3 doctors
+    - Basic AI features (chatbot, reminders)
+    - Email support (48-hour response)
+    - First year support and updates included
+
+2.2 PROFESSIONAL LICENSE ($12,999)
+    - Single or multi-location clinic
+    - Unlimited doctors
+    - Full AI suite (chatbot, voice agent, analytics)
+    - Priority email support (24-hour response)
+    - First year support and updates included
+
+2.3 ENTERPRISE LICENSE ($19,999)
+    - Multi-location support
+    - Unlimited doctors and staff
+    - Full AI suite + custom AI models
+    - Priority support with phone access (4-hour response)
+    - Custom integrations included
+    - First year support and updates included
+
+═══════════════════════════════════════════════════════════════════════
+
+3. RESTRICTIONS
+
+Licensee shall NOT:
+
+3.1 Distribute, sublicense, lease, rent, loan, or otherwise transfer the Software to any third party without explicit written permission from Licensor.
+
+3.2 Create derivative software products based on the Software for the purpose of sale, distribution, or service provision to third parties.
+
+3.3 Remove, alter, or obscure any copyright, trademark, or other proprietary rights notices from the Software.
+
+3.4 Reverse engineer, decompile, or disassemble the Software, except to the extent that such activity is expressly permitted by applicable law.
+
+3.5 Use a single license to operate multiple separate clinic instances or locations without purchasing additional licenses.
+
+3.6 Share license keys or activation codes with other entities or clinics.
+
+3.7 Use the Software in violation of any applicable laws or regulations, including HIPAA, GDPR, or other data protection requirements.
+
+═══════════════════════════════════════════════════════════════════════
+
+4. SOURCE CODE ACCESS
+
+4.1 The Software is provided with full access to source code to enable customization and integration with Licensee's systems.
+
+4.2 Source code access does NOT grant rights to redistribute, resell, or create competing products.
+
+4.3 Licensee may modify the source code for internal use only. Modified versions must retain all copyright notices.
+
+4.4 Licensor is not responsible for supporting customized or modified versions of the Software unless covered by a separate support agreement.
+
+4.5 Licensee is responsible for maintaining backups of any customizations made to the Software.
+
+═══════════════════════════════════════════════════════════════════════
+
+5. ANNUAL MAINTENANCE & SUPPORT
+
+5.1 The first year of maintenance and support is included with the license purchase.
+
+5.2 After the first year, annual maintenance renewal is required to continue receiving:
+    - Software updates and new features
+    - Bug fixes and security patches
+    - Technical support
+    - Documentation updates
+
+5.3 Annual Maintenance Fee: 20% of the original license purchase price
+    - Standard: $1,600/year
+    - Professional: $2,600/year
+    - Enterprise: $4,000/year
+
+5.4 Failure to renew maintenance will result in:
+    - No access to software updates
+    - No technical support
+    - No security patches
+    - License remains valid for existing version only
+
+5.5 Support response times:
+    - Standard: 48 business hours (email)
+    - Professional: 24 business hours (email)
+    - Enterprise: 4 business hours (email + phone)
+
+═══════════════════════════════════════════════════════════════════════
+
+6. LICENSE ACTIVATION & VALIDATION
+
+6.1 The Software requires activation using a unique license key provided by Licensor upon purchase.
+
+6.2 License validation requires internet connectivity for initial activation and periodic verification.
+
+6.3 License keys are unique to each clinic and cannot be shared or transferred without written permission.
+
+6.4 Licensor reserves the right to deactivate licenses that are used in violation of this Agreement.
+
+6.5 Licensee is responsible for maintaining the confidentiality of license keys and activation credentials.
+
+═══════════════════════════════════════════════════════════════════════
+
+7. DATA & PRIVACY
+
+7.1 Licensee is solely responsible for all data entered into, stored by, or processed through the Software.
+
+7.2 Licensee must ensure compliance with all applicable data protection regulations, including but not limited to HIPAA (US), GDPR (EU), and local privacy laws.
+
+7.3 Licensor does not access, store, or process Licensee's patient data or clinic information.
+
+7.4 The Software may collect anonymous usage statistics and error reports to improve product quality. This does NOT include patient data.
+
+7.5 Licensee is responsible for implementing appropriate security measures, including:
+    - Regular database backups
+    - SSL/TLS certificates for encrypted connections
+    - Strong password policies
+    - Access controls and user permissions
+    - Regular security updates
+
+═══════════════════════════════════════════════════════════════════════
+
+8. THIRD-PARTY SERVICES & API COSTS
+
+8.1 The Software integrates with third-party services (OpenAI, Twilio, SendGrid, etc.) for AI and communication features.
+
+8.2 Licensee is responsible for:
+    - Creating accounts with third-party service providers
+    - Obtaining and managing API keys
+    - Paying all costs associated with third-party service usage
+    - Complying with third-party terms of service
+
+8.3 Licensor does NOT resell or mark up third-party services. Licensee pays providers directly.
+
+8.4 The Software includes cost tracking tools to monitor API usage and expenses.
+
+8.5 Licensor is not liable for:
+    - Service interruptions from third-party providers
+    - Price changes by third-party providers
+    - Terms of service violations with third-party providers
+
+═══════════════════════════════════════════════════════════════════════
+
+9. INTELLECTUAL PROPERTY
+
+9.1 The Software, including all code, documentation, graphics, and user interfaces, is the proprietary property of Licensor and is protected by copyright and other intellectual property laws.
+
+9.2 This Agreement grants a license to use the Software, not a sale. Licensor retains all ownership rights.
+
+9.3 All trademarks, service marks, and trade names are proprietary to Licensor.
+
+9.4 Licensee may not use Licensor's name, trademarks, or logos without explicit written permission.
+
+═══════════════════════════════════════════════════════════════════════
+
+10. WARRANTY DISCLAIMER
+
+10.1 THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+10.2 Licensor does not warrant that:
+     - The Software will meet Licensee's requirements
+     - The Software will operate uninterrupted or error-free
+     - All defects will be corrected
+     - The Software is free from viruses or harmful components
+
+10.3 Licensee assumes full responsibility for:
+     - Selecting the Software to achieve intended results
+     - Installation, use, and results obtained from the Software
+     - Data backup and disaster recovery
+
+═══════════════════════════════════════════════════════════════════════
+
+11. LIMITATION OF LIABILITY
+
+11.1 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY:
+     - SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES
+     - LOST PROFITS, REVENUE, OR DATA
+     - BUSINESS INTERRUPTION
+     - COST OF SUBSTITUTE SOFTWARE OR SERVICES
+
+11.2 LICENSOR'S TOTAL LIABILITY UNDER THIS AGREEMENT SHALL NOT EXCEED THE AMOUNT PAID BY LICENSEE FOR THE SOFTWARE LICENSE.
+
+11.3 Some jurisdictions do not allow limitation of liability, so the above limitations may not apply to You.
+
+═══════════════════════════════════════════════════════════════════════
+
+12. BACKUP & DISASTER RECOVERY
+
+12.1 Licensee is solely responsible for:
+     - Regular database backups
+     - Testing backup restoration
+     - Maintaining off-site backup copies
+     - Disaster recovery planning
+
+12.2 The Software includes backup utilities, but Licensor is not responsible for data loss.
+
+12.3 Recommended backup schedule:
+     - Daily automated backups
+     - Weekly off-site backups
+     - Monthly backup restoration tests
+
+═══════════════════════════════════════════════════════════════════════
+
+13. UPDATES & UPGRADES
+
+13.1 With active maintenance, Licensee receives:
+     - Minor updates (bug fixes, security patches)
+     - Major updates (new features, improvements)
+     - Version upgrades
+
+13.2 Updates are provided at Licensor's discretion and schedule.
+
+13.3 Licensee is not obligated to install updates but is strongly encouraged to do so for security.
+
+13.4 Licensor may discontinue support for outdated versions after 2 years.
+
+═══════════════════════════════════════════════════════════════════════
+
+14. TERMINATION
+
+14.1 This Agreement is effective until terminated.
+
+14.2 Licensor may terminate this Agreement immediately if Licensee:
+     - Breaches any terms of this Agreement
+     - Fails to pay maintenance fees (after 30-day grace period)
+     - Uses the Software for illegal purposes
+
+14.3 Upon termination, Licensee must:
+     - Cease all use of the Software
+     - Uninstall the Software from all systems
+     - Destroy all copies of the Software and documentation
+     - Return or destroy all license materials
+
+14.4 Termination does not entitle Licensee to a refund of fees already paid.
+
+14.5 Sections 3, 9, 10, 11, and 15 survive termination.
+
+═══════════════════════════════════════════════════════════════════════
+
+15. GENERAL PROVISIONS
+
+15.1 GOVERNING LAW: This Agreement shall be governed by the laws of [YOUR JURISDICTION], without regard to conflict of law principles.
+
+15.2 ENTIRE AGREEMENT: This Agreement constitutes the entire agreement between the parties and supersedes all prior agreements.
+
+15.3 AMENDMENTS: This Agreement may only be modified by written agreement signed by both parties.
+
+15.4 SEVERABILITY: If any provision is found invalid, the remaining provisions remain in full force.
+
+15.5 WAIVER: Failure to enforce any provision does not constitute a waiver of that provision.
+
+15.6 ASSIGNMENT: Licensee may not assign this Agreement without written consent from Licensor.
+
+15.7 CONTACT: For questions about this Agreement, contact:
+     Email: legal@yourcompany.com
+     Address: [Your Company Address]
+
+═══════════════════════════════════════════════════════════════════════
+
+16. REFUND POLICY
+
+16.1 Refunds are available within 30 days of purchase if:
+     - The Software fails to perform as described
+     - Technical issues prevent installation
+     - Licensee has not activated the license
+
+16.2 No refunds after:
+     - 30 days from purchase date
+     - License has been activated
+     - Significant customization has been performed
+
+16.3 Refund requests must be submitted to: support@yourcompany.com
+
+═══════════════════════════════════════════════════════════════════════
+
+17. ACKNOWLEDGMENT
+
+BY INSTALLING OR USING THE SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ THIS AGREEMENT, UNDERSTAND IT, AND AGREE TO BE BOUND BY ITS TERMS AND CONDITIONS.
+
+IF YOU DO NOT AGREE TO THESE TERMS, DO NOT INSTALL OR USE THE SOFTWARE.
+
+═══════════════════════════════════════════════════════════════════════
+
+Copyright © 2024 [YOUR COMPANY NAME]. All rights reserved.
+
+Dental Practice Management System is a trademark of [YOUR COMPANY NAME].
+
+For support and inquiries:
+Website: https://www.yourcompany.com
+Email: support@yourcompany.com
+Phone: +1-XXX-XXX-XXXX
+
+═══════════════════════════════════════════════════════════════════════

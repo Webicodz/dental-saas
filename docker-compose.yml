@@ -1,0 +1,120 @@
+version: '3.8'
+
+# Simplified Docker Compose for Development
+# This version runs just the database and cache (no app building required)
+# Perfect for local development while you build the frontend/backend
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: dental-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-dental_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_this_password}
+      POSTGRES_DB: ${DB_NAME:-dental_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - dental-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dental_user -d dental_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: dental-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - dental-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # PgAdmin (Database Management UI - Optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: dental-pgadmin
+    platform: linux/amd64   # ensures it works on Windows/WSL
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@dental.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+    - "5050:80"
+    networks:
+    - dental-network
+    depends_on:
+    - postgres
+
+networks:
+  dental-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# ============================================
+# HOW TO USE THIS FILE
+# ============================================
+#
+# 1. Start services:
+#    docker-compose up -d
+#
+# 2. Check status:
+#    docker-compose ps
+#
+# 3. View logs:
+#    docker-compose logs -f
+#
+# 4. Connect to database:
+#    Host: localhost
+#    Port: 5432
+#    User: dental_user
+#    Password: (from .env file)
+#    Database: dental_db
+#
+# 5. Access PgAdmin (Database GUI):
+#    http://localhost:5050
+#    Email: admin@dental.local
+#    Password: admin
+#
+# 6. Stop services:
+#    docker-compose down
+#
+# 7. Remove all data (fresh start):
+#    docker-compose down -v
+#
+# ============================================
+# NEXT STEPS FOR DEVELOPMENT
+# ============================================
+#
+# This gives you:
+# ✅ PostgreSQL database running on port 5432
+# ✅ Redis cache running on port 6379
+# ✅ PgAdmin UI for database management
+#
+# You can now:
+# 1. Build your frontend (React/Next.js) separately
+# 2. Build your backend API separately
+# 3. Connect them to this database
+# 4. Develop without Docker complexity
+#
+# When ready for production, add the app services.

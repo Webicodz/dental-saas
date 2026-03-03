@@ -1,0 +1,94 @@
+dental-saas-selfhosted/
+├── README.md                           # Main project overview
+├── LICENSE.txt                         # Your license terms
+├── INSTALLATION.md                     # Installation guide
+├── docker-compose.yml                  # Docker setup
+├── package.json                        # Root package.json
+│
+├── apps/
+│   ├── web/                           # Next.js Frontend
+│   │   ├── package.json
+│   │   ├── next.config.js
+│   │   ├── tailwind.config.js
+│   │   ├── tsconfig.json
+│   │   ├── .env.example
+│   │   ├── public/
+│   │   ├── src/
+│   │   │   ├── app/                   # App router
+│   │   │   ├── components/            # React components
+│   │   │   ├── lib/                   # Utilities
+│   │   │   └── styles/
+│   │   └── README.md
+│   │
+│   ├── api/                           # Node.js Backend API
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── .env.example
+│   │   ├── src/
+│   │   │   ├── index.ts               # Entry point
+│   │   │   ├── config/                # Configuration
+│   │   │   ├── routes/                # API routes
+│   │   │   ├── controllers/           # Business logic
+│   │   │   ├── middleware/            # Auth, validation
+│   │   │   ├── services/              # External services
+│   │   │   └── utils/
+│   │   └── README.md
+│   │
+│   └── ai-services/                   # AI Integration Layer
+│       ├── package.json
+│       ├── src/
+│       │   ├── chatbot/               # AI chat service
+│       │   ├── voice/                 # Voice agent
+│       │   ├── cost-tracker/          # API cost monitoring
+│       │   └── index.ts
+│       └── README.md
+│
+├── packages/
+│   ├── database/                      # Prisma Database
+│   │   ├── package.json
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma          # Database schema
+│   │   │   ├── migrations/
+│   │   │   └── seed.ts                # Sample data
+│   │   └── README.md
+│   │
+│   ├── ui/                            # Shared UI Components
+│   │   ├── package.json
+│   │   ├── src/
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── modal.tsx
+│   │   │   └── index.ts
+│   │   └── README.md
+│   │
+│   └── config/                        # Shared Configuration
+│       ├── eslint-config/
+│       ├── typescript-config/
+│       └── tailwind-config/
+│
+├── installation/
+│   ├── install.sh                     # Auto-installer script
+│   ├── docker-install.sh              # Docker setup
+│   ├── setup-wizard/                  # First-run wizard
+│   └── README.md
+│
+├── documentation/
+│   ├── USER-GUIDE.md                  # For clinic staff
+│   ├── ADMIN-GUIDE.md                 # For IT admin
+│   ├── API-DOCUMENTATION.md           # API reference
+│   ├── CUSTOMIZATION.md               # Customization guide
+│   ├── DEPLOYMENT.md                  # Deployment options
+│   ├── API-SETUP.md                   # Setting up API keys
+│   ├── TROUBLESHOOTING.md             # Common issues
+│   └── CHANGELOG.md                   # Version history
+│
+├── scripts/
+│   ├── backup.sh                      # Backup database
+│   ├── restore.sh                     # Restore database
+│   ├── update.sh                      # Update system
+│   └── validate-license.js            # License validation
+│
+└── LICENSE-SYSTEM/
+    ├── license-server/                # Your license validation server
+    ├── keygen.js                      # Generate license keys
+    └── README.md

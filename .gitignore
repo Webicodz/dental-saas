@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment files (IMPORTANT - don't upload passwords!)
+.env
+.env.local
+.env.production
+
+# Database data
+*.sql
+*.sqlite
+postgres-data/
+redis-data/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Uploads
+uploads/
+temp/
+
+# Build files
+dist/
+build/
+.next/
+
+# Docker volumes (local data)
+pgadmin-data/

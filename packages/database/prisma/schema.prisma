@@ -1,0 +1,553 @@
+// Dental Practice Management System - Database Schema
+// This schema defines all tables and relationships for the dental app
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CLINIC & LICENSE
+// ============================================
+
+model Clinic {
+  id                String   @id @default(uuid())
+  name              String
+  email             String
+  phone             String
+  address           String
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String   @default("US")
+  
+  // Branding
+  logoUrl           String?
+  primaryColor      String   @default("#2563eb")
+  secondaryColor    String   @default("#7c3aed")
+  
+  // Settings
+  timezone          String   @default("America/New_York")
+  currency          String   @default("USD")
+  dateFormat        String   @default("MM/DD/YYYY")
+  timeFormat        String   @default("12h")
+  
+  // Business hours (JSON format)
+  businessHours     Json     // { "monday": { "start": "09:00", "end": "17:00", "closed": false }, ... }
+  
+  // Features enabled
+  features          Json     // { "aiChatbot": true, "voiceAgent": true, "smsReminders": true, ... }
+  
+  // License info
+  licenseKey        String   @unique
+  licenseType       String   // "STANDARD", "PROFESSIONAL", "ENTERPRISE"
+  licenseStatus     String   @default("ACTIVE") // "ACTIVE", "EXPIRED", "SUSPENDED"
+  licenseExpiry     DateTime?
+  activationDate    DateTime @default(now())
+  activationEmail   String
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  users             User[]
+  patients          Patient[]
+  appointments      Appointment[]
+  doctors           Doctor[]
+  treatments        Treatment[]
+  invoices          Invoice[]
+  apiKeys           ApiKey[]
+  apiUsage          ApiUsage[]
+  auditLogs         AuditLog[]
+  
+  @@map("clinics")
+}
+
+// ============================================
+// USERS & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(uuid())
+  clinicId      String
+  
+  // Personal info
+  firstName     String
+  lastName      String
+  email         String    @unique
+  phone         String?
+  avatarUrl     String?
+  
+  // Authentication
+  password      String    // Hashed with bcrypt
+  role          String    // "ADMIN", "DOCTOR", "RECEPTIONIST"
+  status        String    @default("ACTIVE") // "ACTIVE", "INACTIVE", "SUSPENDED"
+  
+  // Permissions
+  permissions   Json?     // Custom permissions if needed
+  
+  // Password reset
+  resetToken    String?
+  resetExpiry   DateTime?
+  
+  // Two-factor auth
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+  
+  // Session
+  lastLogin     DateTime?
+  loginCount    Int       @default(0)
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  clinic        Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  doctor        Doctor?   // If user is a doctor
+  appointments  Appointment[] // Created by this user
+  auditLogs     AuditLog[]
+  
+  @@index([clinicId])
+  @@index([email])
+  @@map("users")
+}
+
+// ============================================
+// DOCTORS
+// ============================================
+
+model Doctor {
+  id                String   @id @default(uuid())
+  clinicId          String
+  userId            String   @unique
+  
+  // Professional info
+  specialization    String   // "General Dentist", "Orthodontist", "Endodontist", etc.
+  licenseNumber     String?
+  qualification     String?
+  experience        Int?     // Years of experience
+  
+  // Schedule
+  workingDays       Json     // ["monday", "tuesday", "wednesday", ...]
+  workingHours      Json     // { "start": "09:00", "end": "17:00" }
+  consultationFee   Float?
+  
+  // Availability
+  isActive          Boolean  @default(true)
+  bio               String?  @db.Text
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments      Appointment[]
+  treatments        Treatment[]
+  
+  @@index([clinicId])
+  @@index([userId])
+  @@map("doctors")
+}
+
+// ============================================
+// PATIENTS
+// ============================================
+
+model Patient {
+  id                String    @id @default(uuid())
+  clinicId          String
+  
+  // Personal info
+  firstName         String
+  lastName          String
+  email             String?
+  phone             String
+  dateOfBirth       DateTime?
+  gender            String?   // "MALE", "FEMALE", "OTHER"
+  
+  // Address
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  
+  // Emergency contact
+  emergencyContact  String?
+  emergencyPhone    String?
+  
+  // Medical history (JSON for flexibility)
+  medicalHistory    Json?     // Allergies, medications, conditions
+  dentalHistory     Json?     // Previous treatments, issues
+  
+  // Insurance
+  insuranceProvider String?
+  insuranceNumber   String?
+  insuranceExpiry   DateTime?
+  
+  // Patient status
+  status            String    @default("ACTIVE") // "ACTIVE", "INACTIVE", "ARCHIVED"
+  registrationDate  DateTime  @default(now())
+  
+  // Notes
+  notes             String?   @db.Text
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointments      Appointment[]
+  treatments        Treatment[]
+  invoices          Invoice[]
+  documents         Document[]
+  messages          Message[]
+  
+  @@index([clinicId])
+  @@index([phone])
+  @@index([email])
+  @@map("patients")
+}
+
+// ============================================
+// APPOINTMENTS
+// ============================================
+
+model Appointment {
+  id                String    @id @default(uuid())
+  clinicId          String
+  patientId         String
+  doctorId          String
+  createdBy         String    // User ID who created this
+  
+  // Appointment details
+  appointmentDate   DateTime
+  startTime         String    // "09:00"
+  endTime           String    // "09:30"
+  duration          Int       // Minutes
+  
+  // Type & reason
+  type              String    // "CONSULTATION", "CLEANING", "FILLING", "ROOT_CANAL", etc.
+  reason            String?   @db.Text
+  notes             String?   @db.Text
+  
+  // Status
+  status            String    @default("SCHEDULED") // "SCHEDULED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"
+  
+  // Reminders sent
+  reminderSent      Boolean   @default(false)
+  reminderSentAt    DateTime?
+  confirmationSent  Boolean   @default(false)
+  
+  // Cancellation
+  cancelledAt       DateTime?
+  cancelReason      String?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor            Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  creator           User      @relation(fields: [createdBy], references: [id])
+  treatments        Treatment[]
+  
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@map("appointments")
+}
+
+// ============================================
+// TREATMENTS
+// ============================================
+
+model Treatment {
+  id                String    @id @default(uuid())
+  clinicId          String
+  patientId         String
+  doctorId          String
+  appointmentId     String?
+  
+  // Treatment details
+  treatmentName     String    // "Root Canal", "Filling", "Extraction", etc.
+  tooth             String?   // Tooth number/identifier
+  procedure         String    @db.Text
+  
+  // Status
+  status            String    @default("PLANNED") // "PLANNED", "IN_PROGRESS", "COMPLETED"
+  startDate         DateTime?
+  completedDate     DateTime?
+  
+  // Cost
+  estimatedCost     Float?
+  actualCost        Float?
+  
+  // Notes
+  notes             String?   @db.Text
+  prescriptions     Json?     // Array of prescribed medications
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient           Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor            Doctor        @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment       Appointment?  @relation(fields: [appointmentId], references: [id])
+  
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("treatments")
+}
+
+// ============================================
+// INVOICES & PAYMENTS
+// ============================================
+
+model Invoice {
+  id                String    @id @default(uuid())
+  clinicId          String
+  patientId         String
+  invoiceNumber     String    @unique
+  
+  // Invoice details
+  items             Json      // Array of { description, quantity, unitPrice, total }
+  subtotal          Float
+  tax               Float     @default(0)
+  discount          Float     @default(0)
+  total             Float
+  
+  // Payment
+  status            String    @default("PENDING") // "PENDING", "PAID", "PARTIALLY_PAID", "OVERDUE", "CANCELLED"
+  paidAmount        Float     @default(0)
+  balanceDue        Float
+  
+  // Payment method
+  paymentMethod     String?   // "CASH", "CARD", "INSURANCE", "CHECK"
+  paymentDate       DateTime?
+  
+  // Due date
+  issueDate         DateTime  @default(now())
+  dueDate           DateTime?
+  
+  // Notes
+  notes             String?   @db.Text
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([invoiceNumber])
+  @@index([status])
+  @@map("invoices")
+}
+
+// ============================================
+// DOCUMENTS (X-rays, Reports, etc.)
+// ============================================
+
+model Document {
+  id                String    @id @default(uuid())
+  clinicId          String
+  patientId         String
+  
+  // Document info
+  title             String
+  description       String?   @db.Text
+  type              String    // "XRAY", "REPORT", "PRESCRIPTION", "CONSENT_FORM", "OTHER"
+  
+  // File
+  fileName          String
+  fileUrl           String
+  fileSize          Int       // Bytes
+  mimeType          String
+  
+  // Metadata
+  uploadedBy        String    // User ID
+  uploadDate        DateTime  @default(now())
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  @@index([clinicId])
+  @@index([patientId])
+  @@map("documents")
+}
+
+// ============================================
+// AI CHATBOT MESSAGES
+// ============================================
+
+model Message {
+  id                String    @id @default(uuid())
+  clinicId          String
+  patientId         String?
+  
+  // Message content
+  role              String    // "USER", "ASSISTANT", "SYSTEM"
+  content           String    @db.Text
+  
+  // Metadata
+  source            String    @default("CHATBOT") // "CHATBOT", "VOICE", "SMS", "EMAIL"
+  sessionId         String    // Group related messages
+  
+  // AI metadata
+  tokensUsed        Int?
+  model             String?   // "gpt-4", "claude-sonnet", etc.
+  cost              Float?    // Cost in USD
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  
+  // Relations
+  patient           Patient?  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([sessionId])
+  @@map("messages")
+}
+
+// ============================================
+// API KEYS & CONFIGURATION
+// ============================================
+
+model ApiKey {
+  id                String    @id @default(uuid())
+  clinicId          String
+  
+  // Provider info
+  provider          String    // "OPENAI", "TWILIO", "SENDGRID", "DEEPGRAM"
+  
+  // Keys (encrypted)
+  apiKey            String
+  apiSecret         String?
+  
+  // Additional config
+  phoneNumber       String?   // For Twilio
+  fromEmail         String?   // For SendGrid
+  
+  // Status
+  isActive          Boolean   @default(true)
+  lastValidated     DateTime?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  
+  @@index([clinicId])
+  @@index([provider])
+  @@map("api_keys")
+}
+
+// ============================================
+// API USAGE TRACKING (for cost monitoring)
+// ============================================
+
+model ApiUsage {
+  id                String    @id @default(uuid())
+  clinicId          String
+  
+  // Usage details
+  provider          String    // "OPENAI", "TWILIO", "SENDGRID"
+  service           String    // "CHAT", "VOICE", "SMS", "EMAIL"
+  
+  // Metrics
+  units             Int       // Tokens, SMS count, call minutes, etc.
+  cost              Float     // Cost in USD
+  
+  // Metadata
+  metadata          Json?     // Additional details
+  
+  // Timestamp
+  usageDate         DateTime  @default(now())
+  
+  // Relations
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  
+  @@index([clinicId])
+  @@index([provider])
+  @@index([usageDate])
+  @@map("api_usage")
+}
+
+// ============================================
+// AUDIT LOGS (for security & compliance)
+// ============================================
+
+model AuditLog {
+  id                String    @id @default(uuid())
+  clinicId          String
+  userId            String?
+  
+  // Action details
+  action            String    // "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT", etc.
+  entity            String    // "PATIENT", "APPOINTMENT", "USER", etc.
+  entityId          String?
+  
+  // Changes (for UPDATE actions)
+  oldValues         Json?
+  newValues         Json?
+  
+  // Metadata
+  ipAddress         String?
+  userAgent         String?
+  
+  // Timestamp
+  createdAt         DateTime  @default(now())
+  
+  // Relations
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user              User?     @relation(fields: [userId], references: [id])
+  
+  @@index([clinicId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================
+// SYSTEM SETTINGS (global app settings)
+// ============================================
+
+model SystemSetting {
+  id                String    @id @default(uuid())
+  key               String    @unique
+  value             Json
+  description       String?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@map("system_settings")
+}
