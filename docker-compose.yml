@@ -49,17 +49,22 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: dental-pgadmin
-    platform: linux/amd64   # ensures it works on Windows/WSL
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@dental.local
       PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 80
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    user: root
     ports:
-    - "5050:80"
+      - "5050:80"
     networks:
-    - dental-network
+      - dental-network
     depends_on:
-    - postgres
+      - postgres
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
 
 networks:
   dental-network:
@@ -69,6 +74,8 @@ volumes:
   postgres-data:
     driver: local
   redis-data:
+    driver: local
+  pgadmin-data:
     driver: local
 
 # ============================================

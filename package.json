@@ -3,36 +3,25 @@
   "version": "1.0.0",
   "description": "Complete dental practice management system with AI integration",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "start": "turbo run start",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "db:migrate": "cd packages/database && npx prisma migrate deploy",
-    "db:generate": "cd packages/database && npx prisma generate",
-    "db:seed": "cd packages/database && npx prisma db seed",
-    "db:studio": "cd packages/database && npx prisma studio",
-    "backup": "bash scripts/backup.sh",
-    "restore": "bash scripts/restore.sh",
-    "check-updates": "node scripts/check-updates.js",
-    "validate-license": "node LICENSE-SYSTEM/validate-license.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3000}",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@prisma/client": "^5.9.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.13.0",
-    "@typescript-eslint/parser": "^6.13.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "eslint": "^8.55.0",
     "eslint-config-next": "^14.0.3",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.1.0",
-    "turbo": "^1.11.0",
+    "prisma": "^5.9.0",
     "typescript": "^5.3.2"
   },
   "engines": {
