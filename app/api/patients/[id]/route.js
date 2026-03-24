@@ -11,10 +11,17 @@
  *   public function update($id) { }
  *   public function delete($id) { }
  * }
+ * 
+ * SECURITY: All operations enforce:
+ * 1. JWT Authentication
+ * 2. Role-Based Permissions
+ * 3. Clinic Isolation (can only access own clinic's patients)
  */
 
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { authenticate, authError, addClinicFilter, validateClinicAccess } from '@/lib/middleware'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 
 /**
  * GET SINGLE PATIENT
@@ -22,12 +29,31 @@ import prisma from '@/lib/prisma'
  */
 export async function GET(request, { params }) {
   try {
+    // AUTHENTICATE REQUEST
+    const user = authenticate(request)
+    
+    if (!user) {
+      return authError('Authentication required')
+    }
+
+    // CHECK PERMISSION
+    if (!hasPermission(user.role, PERMISSIONS.PATIENTS.VIEW)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied. You do not have permission to view patients.',
+          code: 'FORBIDDEN'
+        },
+        { status: 403 }
+      )
+    }
+
     const { id } = params
 
-    // FIND PATIENT BY ID
-    // CODEIGNITER: $this->db->where('id', $id)->get('patients')->row()
-    const patient = await prisma.patient.findUnique({
-      where: { id },
+    // FIND PATIENT BY ID WITH CLINIC FILTER
+    // CODEIGNITER: $this->db->where('id', $id)->where('clinic_id', $clinic_id)->get('patients')->row()
+    const patient = await prisma.patient.findFirst({
+      where: addClinicFilter({ id }, user.clinicId),
       include: {
         clinic: true,
         appointments: {
@@ -65,12 +91,32 @@ export async function GET(request, { params }) {
  */
 export async function PUT(request, { params }) {
   try {
+    // AUTHENTICATE REQUEST
+    const user = authenticate(request)
+    
+    if (!user) {
+      return authError('Authentication required')
+    }
+
+    // CHECK PERMISSION
+    if (!hasPermission(user.role, PERMISSIONS.PATIENTS.UPDATE)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied. You do not have permission to update patients.',
+          code: 'FORBIDDEN'
+        },
+        { status: 403 }
+      )
+    }
+
     const { id } = params
     const body = await request.json()
 
-    // CHECK IF PATIENT EXISTS
-    const existing = await prisma.patient.findUnique({
-      where: { id }
+    // CHECK IF PATIENT EXISTS AND BELONGS TO USER'S CLINIC
+    // CODEIGNITER: $this->db->where('id', $id)->where('clinic_id', $clinic_id)->get('patients')->row()
+    const existing = await prisma.patient.findFirst({
+      where: addClinicFilter({ id }, user.clinicId)
     })
 
     if (!existing) {
@@ -81,7 +127,7 @@ export async function PUT(request, { params }) {
     }
 
     // UPDATE PATIENT
-    // CODEIGNITER: $this->db->where('id', $id)->update('patients', $data)
+    // CODEIGNITER: $this->db->where('id', $id)->where('clinic_id', $clinic_id)->update('patients', $data)
     const updated = await prisma.patient.update({
       where: { id },
       data: {
@@ -124,14 +170,35 @@ export async function PUT(request, { params }) {
 /**
  * DELETE PATIENT
  * URL: DELETE /api/patients/123
+ * NOTE: Only ADMIN role can delete patients
  */
 export async function DELETE(request, { params }) {
   try {
+    // AUTHENTICATE REQUEST
+    const user = authenticate(request)
+    
+    if (!user) {
+      return authError('Authentication required')
+    }
+
+    // CHECK PERMISSION - Only ADMIN can delete patients
+    if (!hasPermission(user.role, PERMISSIONS.PATIENTS.DELETE)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied. Only administrators can delete patients.',
+          code: 'FORBIDDEN'
+        },
+        { status: 403 }
+      )
+    }
+
     const { id } = params
 
-    // CHECK IF PATIENT EXISTS
-    const existing = await prisma.patient.findUnique({
-      where: { id }
+    // CHECK IF PATIENT EXISTS AND BELONGS TO USER'S CLINIC
+    // CODEIGNITER: $this->db->where('id', $id)->where('clinic_id', $clinic_id)->get('patients')->row()
+    const existing = await prisma.patient.findFirst({
+      where: addClinicFilter({ id }, user.clinicId)
     })
 
     if (!existing) {
@@ -142,7 +209,7 @@ export async function DELETE(request, { params }) {
     }
 
     // DELETE PATIENT
-    // CODEIGNITER: $this->db->where('id', $id)->delete('patients')
+    // CODEIGNITER: $this->db->where('id', $id)->where('clinic_id', $clinic_id)->delete('patients')
     await prisma.patient.delete({
       where: { id }
     })

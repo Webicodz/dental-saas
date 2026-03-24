@@ -14,17 +14,39 @@
  * }
  *
  * WHAT IT DOES:
- * 1. Get search query from URL
- * 2. Query database for patients
- * 3. Filter by search term (name, email, phone)
- * 4. Return JSON list of patients
+ * 1. Authenticate request via JWT
+ * 2. Get search query from URL
+ * 3. Query database for patients (CLINIC ISOLATED)
+ * 4. Filter by search term (name, email, phone)
+ * 5. Return JSON list of patients
  */
 
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { authenticate, authError, addClinicFilter } from '@/lib/middleware'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 
 export async function GET(request) {
   try {
+    // AUTHENTICATE REQUEST
+    const user = authenticate(request)
+    
+    if (!user) {
+      return authError('Authentication required')
+    }
+
+    // CHECK PERMISSION
+    if (!hasPermission(user.role, PERMISSIONS.PATIENTS.VIEW)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied. You do not have permission to view patients.',
+          code: 'FORBIDDEN'
+        },
+        { status: 403 }
+      )
+    }
+
     // GET SEARCH PARAMS FROM URL
     // Example: /api/patients?search=john&status=active
     const { searchParams } = new URL(request.url)
@@ -33,7 +55,8 @@ export async function GET(request) {
 
     // BUILD QUERY CONDITIONS
     // This is like building WHERE clauses in SQL
-    const where = {}
+    // ADD CLINIC ISOLATION - Critical for multi-tenant security
+    const where = addClinicFilter({}, user.clinicId)
 
     // SEARCH FILTER
     // Search in firstName, lastName, email, or phone
@@ -53,7 +76,8 @@ export async function GET(request) {
 
     // QUERY DATABASE
     // CODEIGNITER EQUIVALENT:
-    // $this->db->like('first_name', $search)
+    // $this->db->where('clinic_id', $clinic_id)
+    //          ->like('first_name', $search)
     //          ->or_like('last_name', $search)
     //          ->where('status', $status)
     //          ->get('patients')
@@ -111,6 +135,25 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    // AUTHENTICATE REQUEST
+    const user = authenticate(request)
+    
+    if (!user) {
+      return authError('Authentication required')
+    }
+
+    // CHECK PERMISSION
+    if (!hasPermission(user.role, PERMISSIONS.PATIENTS.CREATE)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied. You do not have permission to create patients.',
+          code: 'FORBIDDEN'
+        },
+        { status: 403 }
+      )
+    }
+
     // GET DATA FROM REQUEST BODY
     const body = await request.json()
     const {
@@ -130,8 +173,7 @@ export async function POST(request) {
       allergies,
       medicalHistory,
       insuranceProvider,
-      insurancePolicyNumber,
-      clinicId
+      insurancePolicyNumber
     } = body
 
     // VALIDATE REQUIRED FIELDS
@@ -143,21 +185,27 @@ export async function POST(request) {
     }
 
     // CHECK IF EMAIL ALREADY EXISTS (if provided)
+    // MUST CHECK IN SAME CLINIC for multi-tenant isolation
     if (email) {
-      const existing = await prisma.patient.findUnique({
-        where: { email }
+      const existing = await prisma.patient.findFirst({
+        where: { 
+          email,
+          clinicId: user.clinicId // Only check in user's clinic
+        }
       })
 
       if (existing) {
         return NextResponse.json(
-          { error: 'Email already registered' },
+          { error: 'Email already registered in your clinic' },
           { status: 409 }
         )
       }
     }
 
     // CREATE PATIENT IN DATABASE
+    // CLINIC ID IS SET FROM AUTHENTICATED USER - NEVER FROM REQUEST BODY
     // CODEIGNITER EQUIVALENT:
+    // $data['clinic_id'] = $this->session->userdata('clinic_id');
     // $this->db->insert('patients', $data)
 
     const newPatient = await prisma.patient.create({
@@ -180,7 +228,7 @@ export async function POST(request) {
         insuranceProvider: insuranceProvider || null,
         insurancePolicyNumber: insurancePolicyNumber || null,
         status: 'ACTIVE',
-        clinicId: clinicId || null
+        clinicId: user.clinicId // Set from authenticated user, NOT from request
       },
       include: {
         clinic: true

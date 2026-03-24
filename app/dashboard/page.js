@@ -1,19 +1,21 @@
 /**
  * DASHBOARD PAGE
  * 
- * This is what users see after logging in
+ * Role-based dashboard for the dental practice management system.
+ * Displays different widgets and data based on user role:
+ * - ADMIN: Clinic overview, staff, revenue
+ * - DOCTOR: Today's schedule, patients, treatments
+ * - RECEPTIONIST: Appointments, check-in queue, quick actions
  * 
  * IN CODEIGNITER:
  * Like: application/views/dashboard.php
- * But with built-in logic and state management
  * 
  * FEATURES:
  * - Protected route (must be logged in)
- * - Shows user info
- * - Stats cards (patients, appointments, revenue)
- * - Navigation menu
- * - Logout button
- * - Responsive design
+ * - Role-specific dashboard widgets
+ * - Real-time statistics
+ * - Today's appointments
+ * - Recent activity feed
  */
 
 'use client'
@@ -21,470 +23,197 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import RoleBasedDashboard from '@/components/dashboard/RoleBasedDashboard'
+
+// Navigation items based on role
+const NAV_ITEMS = {
+  ADMIN: [
+    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { href: '/appointments', label: 'Appointments', icon: '📅' },
+    { href: '/patients', label: 'Patients', icon: '👥' },
+    { href: '/doctors', label: 'Doctors', icon: '👨‍⚕️' },
+    { href: '/billing', label: 'Billing', icon: '💰' },
+    { href: '/clinic/users', label: 'Staff', icon: '👨‍💼' },
+    { href: '/clinic/settings', label: 'Settings', icon: '⚙️' }
+  ],
+  DOCTOR: [
+    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { href: '/appointments', label: 'Appointments', icon: '📅' },
+    { href: '/appointments/calendar', label: 'Calendar', icon: '📆' },
+    { href: '/patients', label: 'Patients', icon: '👥' },
+    { href: '/treatments', label: 'Treatments', icon: '💊' }
+  ],
+  RECEPTIONIST: [
+    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { href: '/appointments', label: 'Appointments', icon: '📅' },
+    { href: '/appointments/calendar', label: 'Calendar', icon: '📆' },
+    { href: '/patients', label: 'Patients', icon: '👥' },
+    { href: '/billing', label: 'Billing', icon: '💰' }
+  ]
+}
 
 export default function DashboardPage() {
-  // STATE MANAGEMENT
-  // useState creates reactive variables that update the UI
   const [user, setUser] = useState(null)
-  const [stats, setStats] = useState({
-    totalPatients: 0,
-    todayAppointments: 0,
-    monthlyRevenue: 0,
-    pendingTasks: 0
-  })
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   
   const router = useRouter()
 
-  // LOAD USER DATA WHEN PAGE LOADS
+  // FETCH DASHBOARD STATS
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/dashboard/stats', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err)
+    }
+  }
+
+  // LOAD USER DATA
   useEffect(() => {
-    // Get user data from localStorage
-    // (This was saved when user logged in)
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      setUser(JSON.parse(userData))
+    const loadUserData = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          router.push('/login')
+          return
+        }
+
+        const userRes = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          if (userData.success) {
+            setUser(userData.user)
+            localStorage.setItem('user', JSON.stringify(userData.user))
+            await fetchDashboardStats()
+          }
+        }
+      } catch (err) {
+        console.error('Error loading user data:', err)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    // In a real app, we'd fetch stats from API:
-    // fetch('/api/dashboard/stats')
-    //   .then(res => res.json())
-    //   .then(data => setStats(data))
-    
-    // For now, we'll use dummy data
-    setStats({
-      totalPatients: 247,
-      todayAppointments: 12,
-      monthlyRevenue: 45680,
-      pendingTasks: 8
-    })
-  }, [])
+    loadUserData()
+  }, [router])
 
-  // LOGOUT FUNCTION
+  // LOGOUT
   const handleLogout = () => {
-    // Clear localStorage
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    
-    // Redirect to login
     router.push('/login')
   }
 
+  // Get navigation items for current role
+  const navItems = user ? NAV_ITEMS[user.role] || NAV_ITEMS.RECEPTIONIST : []
+
   return (
     <ProtectedRoute>
-      <div style={{
-        minHeight: '100vh',
-        background: '#f5f7fa'
-      }}>
-        {/* HEADER / NAVIGATION BAR */}
-        <header style={{
-          background: 'white',
-          borderBottom: '1px solid #e5e7eb',
-          padding: '1rem 2rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      <div style={styles.container}>
+        {/* SIDEBAR */}
+        <aside style={{
+          ...styles.sidebar,
+          width: sidebarOpen ? '260px' : '70px'
         }}>
-          {/* LOGO */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem'
-          }}>
-            <div style={{ fontSize: '2rem' }}>🦷</div>
-            <div>
-              <h1 style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: '#333',
-                margin: 0
-              }}>
-                Dental Management
-              </h1>
-              <p style={{
-                fontSize: '0.8rem',
-                color: '#666',
-                margin: 0
-              }}>
-                Practice Management System
-              </p>
-            </div>
-          </div>
-
-          {/* USER INFO & LOGOUT */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1.5rem'
-          }}>
-            {/* USER AVATAR & NAME */}
-            {user && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem'
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '1.2rem'
-                }}>
-                  {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-                </div>
-                <div>
-                  <div style={{
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    color: '#333'
-                  }}>
-                    {user.firstName} {user.lastName}
-                  </div>
-                  <div style={{
-                    fontSize: '0.75rem',
-                    color: '#666'
-                  }}>
-                    {user.role}
-                  </div>
-                </div>
+          <div style={styles.logo}>
+            <div style={styles.logoIcon}>🦷</div>
+            {sidebarOpen && (
+              <div>
+                <h2 style={styles.logoTitle}>DentalCare</h2>
+                <p style={styles.logoSubtitle}>Management System</p>
               </div>
             )}
-
-            {/* LOGOUT BUTTON */}
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '0.5rem 1.25rem',
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                transition: 'background 0.2s'
-              }}
-              onMouseOver={(e) => e.target.style.background = '#dc2626'}
-              onMouseOut={(e) => e.target.style.background = '#ef4444'}
-            >
-              Logout
-            </button>
           </div>
-        </header>
+
+          <nav style={styles.nav}>
+            {navItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.href}
+                style={styles.navItem}
+              >
+                <span style={styles.navIcon}>{item.icon}</span>
+                {sidebarOpen && <span style={styles.navLabel}>{item.label}</span>}
+              </a>
+            ))}
+          </nav>
+
+          <button 
+            style={styles.toggleBtn}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? '◀' : '▶'}
+          </button>
+        </aside>
 
         {/* MAIN CONTENT */}
         <main style={{
-          padding: '2rem',
-          maxWidth: '1400px',
-          margin: '0 auto'
+          ...styles.main,
+          marginLeft: sidebarOpen ? '260px' : '70px'
         }}>
-          {/* WELCOME MESSAGE */}
-          <div style={{
-            marginBottom: '2rem'
-          }}>
-            <h2 style={{
-              fontSize: '2rem',
-              fontWeight: 'bold',
-              color: '#333',
-              marginBottom: '0.5rem'
-            }}>
-              Welcome back, {user?.firstName}! 👋
-            </h2>
-            <p style={{
-              color: '#666',
-              fontSize: '1rem'
-            }}>
-              Here's what's happening with your practice today
-            </p>
-          </div>
+          <header style={styles.header}>
+            <div style={styles.headerLeft}>
+              <h1 style={styles.pageTitle}>
+                {user?.role === 'ADMIN' && 'Clinic Overview'}
+                {user?.role === 'DOCTOR' && 'My Dashboard'}
+                {user?.role === 'RECEPTIONIST' && 'Front Desk'}
+              </h1>
+              <p style={styles.clinicName}>{user?.clinic?.name || 'Loading...'}</p>
+            </div>
 
-          {/* STATS CARDS */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1.5rem',
-            marginBottom: '2rem'
-          }}>
-            {/* TOTAL PATIENTS CARD */}
-            <div style={{
-              background: 'white',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: '1rem'
-              }}>
-                <div>
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: '#666',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Total Patients
-                  </p>
-                  <p style={{
-                    fontSize: '2rem',
-                    fontWeight: 'bold',
-                    color: '#333',
-                    margin: 0
-                  }}>
-                    {stats.totalPatients}
-                  </p>
-                </div>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem'
+            <div style={styles.headerRight}>
+              {user && (
+                <span style={{
+                  ...styles.roleBadge,
+                  backgroundColor: 
+                    user.role === 'ADMIN' ? '#7c3aed' :
+                    user.role === 'DOCTOR' ? '#2563eb' : '#059669'
                 }}>
-                  👥
-                </div>
-              </div>
-              <div style={{
-                fontSize: '0.875rem',
-                color: '#10b981'
-              }}>
-                ↑ 12% from last month
-              </div>
-            </div>
+                  {user.role}
+                </span>
+              )}
 
-            {/* TODAY'S APPOINTMENTS CARD */}
-            <div style={{
-              background: 'white',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: '1rem'
-              }}>
-                <div>
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: '#666',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Today's Appointments
-                  </p>
-                  <p style={{
-                    fontSize: '2rem',
-                    fontWeight: 'bold',
-                    color: '#333',
-                    margin: 0
-                  }}>
-                    {stats.todayAppointments}
-                  </p>
+              {user && (
+                <div style={styles.userInfo}>
+                  <div style={styles.avatar}>
+                    {user.firstName?.[0]}{user.lastName?.[0]}
+                  </div>
+                  <div>
+                    <p style={styles.userName}>{user.firstName} {user.lastName}</p>
+                    <p style={styles.userEmail}>{user.email}</p>
+                  </div>
                 </div>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem'
-                }}>
-                  📅
-                </div>
-              </div>
-              <div style={{
-                fontSize: '0.875rem',
-                color: '#3b82f6'
-              }}>
-                3 appointments pending
-              </div>
-            </div>
+              )}
 
-            {/* MONTHLY REVENUE CARD */}
-            <div style={{
-              background: 'white',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: '1rem'
-              }}>
-                <div>
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: '#666',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Monthly Revenue
-                  </p>
-                  <p style={{
-                    fontSize: '2rem',
-                    fontWeight: 'bold',
-                    color: '#333',
-                    margin: 0
-                  }}>
-                    ${stats.monthlyRevenue.toLocaleString()}
-                  </p>
-                </div>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem'
-                }}>
-                  💰
-                </div>
-              </div>
-              <div style={{
-                fontSize: '0.875rem',
-                color: '#10b981'
-              }}>
-                ↑ 8% from last month
-              </div>
+              <button style={styles.logoutBtn} onClick={handleLogout}>
+                🚪 Logout
+              </button>
             </div>
+          </header>
 
-            {/* PENDING TASKS CARD */}
-            <div style={{
-              background: 'white',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: '1rem'
-              }}>
-                <div>
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: '#666',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Pending Tasks
-                  </p>
-                  <p style={{
-                    fontSize: '2rem',
-                    fontWeight: 'bold',
-                    color: '#333',
-                    margin: 0
-                  }}>
-                    {stats.pendingTasks}
-                  </p>
-                </div>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem'
-                }}>
-                  ✅
-                </div>
+          <div style={styles.content}>
+            {loading ? (
+              <div style={styles.loadingState}>
+                <div style={styles.spinner}></div>
+                <p>Loading dashboard...</p>
               </div>
-              <div style={{
-                fontSize: '0.875rem',
-                color: '#f59e0b'
-              }}>
-                2 high priority
-              </div>
-            </div>
-          </div>
-
-          {/* QUICK ACTIONS */}
-          <div style={{
-            background: 'white',
-            padding: '2rem',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #e5e7eb'
-          }}>
-            <h3 style={{
-              fontSize: '1.25rem',
-              fontWeight: 'bold',
-              color: '#333',
-              marginBottom: '1.5rem'
-            }}>
-              Quick Actions
-            </h3>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '1rem'
-            }}>
-              <QuickActionButton 
-                icon="👤"
-                label="Add Patient"
-                onClick={() => alert('Patient management coming in Lesson 3!')}
-              />
-              <QuickActionButton 
-                icon="📅"
-                label="New Appointment"
-                onClick={() => alert('Appointment system coming in Lesson 4!')}
-              />
-              <QuickActionButton 
-                icon="💳"
-                label="Create Invoice"
-                onClick={() => alert('Billing system coming in Lesson 5!')}
-              />
-              <QuickActionButton 
-                icon="📊"
-                label="View Reports"
-                onClick={() => alert('Reports coming in Lesson 6!')}
-              />
-            </div>
-          </div>
-
-          {/* COMING SOON MESSAGE */}
-          <div style={{
-            marginTop: '2rem',
-            padding: '1.5rem',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '12px',
-            color: 'white',
-            textAlign: 'center'
-          }}>
-            <h4 style={{
-              fontSize: '1.25rem',
-              fontWeight: 'bold',
-              marginBottom: '0.5rem'
-            }}>
-              🚀 More Features Coming Soon!
-            </h4>
-            <p style={{
-              fontSize: '0.95rem',
-              opacity: 0.9
-            }}>
-              Lesson 3: Patient Management • Lesson 4: Appointments • Lesson 5: Billing • Lesson 6: AI Features
-            </p>
+            ) : (
+              <RoleBasedDashboard user={user} stats={stats} />
+            )}
           </div>
         </main>
       </div>
@@ -492,65 +221,173 @@ export default function DashboardPage() {
   )
 }
 
-// QUICK ACTION BUTTON COMPONENT
-// Reusable button for quick actions
-function QuickActionButton({ icon, label, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '1.25rem',
-        background: 'white',
-        border: '2px solid #e5e7eb',
-        borderRadius: '12px',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        textAlign: 'center'
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.borderColor = '#667eea'
-        e.currentTarget.style.transform = 'translateY(-2px)'
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.2)'
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.borderColor = '#e5e7eb'
-        e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.boxShadow = 'none'
-      }}
-    >
-      <div style={{
-        fontSize: '2rem',
-        marginBottom: '0.5rem'
-      }}>
-        {icon}
-      </div>
-      <div style={{
-        fontSize: '0.95rem',
-        fontWeight: '600',
-        color: '#333'
-      }}>
-        {label}
-      </div>
-    </button>
-  )
+// Styles
+const styles = {
+  container: {
+    display: 'flex',
+    minHeight: '100vh',
+    background: '#f5f7fa'
+  },
+  sidebar: {
+    position: 'fixed',
+    left: 0,
+    top: 0,
+    height: '100vh',
+    background: 'white',
+    borderRight: '1px solid #e5e7eb',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'width 0.3s',
+    zIndex: 100
+  },
+  logo: {
+    padding: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    borderBottom: '1px solid #e5e7eb'
+  },
+  logoIcon: {
+    fontSize: '32px'
+  },
+  logoTitle: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#1f2937',
+    margin: 0
+  },
+  logoSubtitle: {
+    fontSize: '11px',
+    color: '#6b7280',
+    margin: 0
+  },
+  nav: {
+    flex: 1,
+    padding: '16px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  navItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    color: '#4b5563',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s'
+  },
+  navIcon: {
+    fontSize: '18px'
+  },
+  navLabel: {
+    whiteSpace: 'nowrap'
+  },
+  toggleBtn: {
+    margin: '16px',
+    padding: '10px',
+    background: '#f3f4f6',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px'
+  },
+  main: {
+    flex: 1,
+    transition: 'margin-left 0.3s'
+  },
+  header: {
+    background: 'white',
+    borderBottom: '1px solid #e5e7eb',
+    padding: '16px 24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  headerLeft: {},
+  pageTitle: {
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#1f2937',
+    margin: 0
+  },
+  clinicName: {
+    fontSize: '13px',
+    color: '#6b7280',
+    margin: '4px 0 0 0'
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px'
+  },
+  roleBadge: {
+    padding: '4px 12px',
+    borderRadius: '16px',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: 'white',
+    textTransform: 'uppercase'
+  },
+  userInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  avatar: {
+    width: '44px',
+    height: '44px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    fontSize: '16px',
+    fontWeight: '600'
+  },
+  userName: {
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#1f2937',
+    margin: 0
+  },
+  userEmail: {
+    fontSize: '12px',
+    color: '#6b7280',
+    margin: 0
+  },
+  logoutBtn: {
+    padding: '10px 16px',
+    background: '#fee2e2',
+    color: '#dc2626',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  content: {
+    padding: '24px'
+  },
+  loadingState: {
+    padding: '60px',
+    textAlign: 'center',
+    color: '#6b7280'
+  },
+  spinner: {
+    width: '40px',
+    height: '40px',
+    border: '3px solid #e5e7eb',
+    borderTopColor: '#2563eb',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+    margin: '0 auto 16px'
+  }
 }
-
-/**
- * WHAT THIS PAGE DOES:
- * 
- * 1. PROTECTED - Only logged-in users can see it
- * 2. SHOWS USER INFO - Name, role, avatar
- * 3. DISPLAYS STATS - Patients, appointments, revenue, tasks
- * 4. QUICK ACTIONS - Buttons for common tasks
- * 5. LOGOUT - Button to sign out
- * 
- * CODEIGNITER EQUIVALENT:
- * Like dashboard controller that checks session
- * and loads dashboard view with data
- * 
- * But here it's all in one file with:
- * - Built-in authentication check
- * - State management
- * - Beautiful UI
- * - Responsive design
- */

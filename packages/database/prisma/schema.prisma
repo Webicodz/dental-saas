@@ -355,12 +355,45 @@ model Invoice {
   // Relations
   clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  payments          Payment[]
   
   @@index([clinicId])
   @@index([patientId])
   @@index([invoiceNumber])
   @@index([status])
   @@map("invoices")
+}
+
+model Payment {
+  id                String    @id @default(uuid())
+  clinicId          String
+  invoiceId         String
+  
+  // Payment details
+  amount            Float
+  method            String    // "CASH", "CARD", "INSURANCE", "CHECK"
+  
+  // Reference numbers
+  referenceNumber   String?   // Check number, transaction ID, etc.
+  
+  // Status
+  status            String    @default("COMPLETED") // "COMPLETED", "PENDING", "FAILED", "REFUNDED"
+  
+  // Notes
+  notes             String?   @db.Text
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  invoice           Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([clinicId])
+  @@index([invoiceId])
+  @@index([status])
+  @@map("payments")
 }
 
 // ============================================
