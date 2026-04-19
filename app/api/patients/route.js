@@ -208,6 +208,18 @@ export async function POST(request) {
     // $data['clinic_id'] = $this->session->userdata('clinic_id');
     // $this->db->insert('patients', $data)
 
+    // Construct medical history JSON if blood type or allergies exist
+    let medicalHistoryJson = medicalHistory || {};
+    if (typeof medicalHistoryJson === 'string') {
+      try {
+        medicalHistoryJson = JSON.parse(medicalHistoryJson);
+      } catch (e) {
+        medicalHistoryJson = { notes: medicalHistory };
+      }
+    }
+    if (bloodType) medicalHistoryJson.bloodType = bloodType;
+    if (allergies) medicalHistoryJson.allergies = allergies;
+
     const newPatient = await prisma.patient.create({
       data: {
         firstName,
@@ -220,13 +232,11 @@ export async function POST(request) {
         city: city || null,
         state: state || null,
         zipCode: zipCode || null,
-        emergencyContactName: emergencyContactName || null,
-        emergencyContactPhone: emergencyContactPhone || null,
-        bloodType: bloodType || null,
-        allergies: allergies || null,
-        medicalHistory: medicalHistory || null,
+        emergencyContact: emergencyContactName || null,
+        emergencyPhone: emergencyContactPhone || null,
+        medicalHistory: Object.keys(medicalHistoryJson).length > 0 ? medicalHistoryJson : null,
         insuranceProvider: insuranceProvider || null,
-        insurancePolicyNumber: insurancePolicyNumber || null,
+        insuranceNumber: insurancePolicyNumber || null,
         status: 'ACTIVE',
         clinicId: user.clinicId // Set from authenticated user, NOT from request
       },

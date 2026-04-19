@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { authenticate, authError } from '@/lib/middleware';
 import prisma from '@/lib/prisma';
 
 export async function GET(request) {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = authenticate(request);
+    if (!user) {
+      return authError();
     }
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d';
-    const clinicId = session.user.clinicId;
+    const clinicId = user.clinicId;
 
     // Calculate date range based on period
     const now = new Date();
@@ -33,10 +33,10 @@ export async function GET(request) {
 
     // Get appointments grouped by date
     const appointmentsByDate = await prisma.appointment.groupBy({
-      by: ['date'],
+      by: ['appointmentDate'],
       where: {
         clinicId,
-        date: { gte: startDate },
+        appointmentDate: { gte: startDate },
       },
       _count: true,
     });
@@ -46,7 +46,7 @@ export async function GET(request) {
       by: ['status'],
       where: {
         clinicId,
-        date: { gte: startDate },
+        appointmentDate: { gte: startDate },
       },
       _count: true,
     });
@@ -56,7 +56,7 @@ export async function GET(request) {
       by: ['type'],
       where: {
         clinicId,
-        date: { gte: startDate },
+        appointmentDate: { gte: startDate },
       },
       _count: true,
     });
@@ -70,7 +70,7 @@ export async function GET(request) {
       labels.push(currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
       const dateStr = currentDate.toISOString().split('T')[0];
       const count = appointmentsByDate.find(a => 
-        a.date.toISOString().split('T')[0] === dateStr
+        a.appointmentDate.toISOString().split('T')[0] === dateStr
       )?._count || 0;
       data.push(count);
       currentDate.setDate(currentDate.getDate() + 1);
@@ -88,7 +88,7 @@ export async function GET(request) {
     const durationStats = await prisma.appointment.findMany({
       where: {
         clinicId,
-        date: { gte: startDate },
+        appointmentDate: { gte: startDate },
         duration: { not: null },
       },
       select: { duration: true },
@@ -102,16 +102,16 @@ export async function GET(request) {
     const appointments = await prisma.appointment.findMany({
       where: {
         clinicId,
-        date: { gte: startDate },
-        time: { not: null },
+        appointmentDate: { gte: startDate },
+        startTime: { not: null },
       },
-      select: { time: true },
+      select: { startTime: true },
     });
 
     const hourCounts = {};
     appointments.forEach(apt => {
-      if (apt.time) {
-        const hour = parseInt(apt.time.split(':')[0]);
+      if (apt.startTime) {
+        const hour = parseInt(apt.startTime.split(':')[0]);
         hourCounts[hour] = (hourCounts[hour] || 0) + 1;
       }
     });

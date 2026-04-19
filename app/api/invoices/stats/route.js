@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'nextauth';
-import { authOptions } from '@/lib/auth';
+import { authenticate, authError } from '@/lib/middleware';
 
 // GET /api/invoices/stats - Get financial statistics
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { searchParams } = new URL(request.url);
@@ -36,7 +35,7 @@ export async function GET(request) {
         startDate = new Date(now.setMonth(now.getMonth() - 1));
     }
 
-    const clinicId = session.user.clinicId;
+    const clinicId = user.clinicId;
 
     // Get all invoices for this clinic
     const allInvoices = await prisma.invoice.findMany({

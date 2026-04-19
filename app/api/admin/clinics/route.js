@@ -185,6 +185,8 @@ export async function POST(request) {
     }
 
     const body = await request.json()
+    console.log('Creating clinic with body:', JSON.stringify(body, null, 2))
+    
     const {
       name,
       email,
@@ -227,7 +229,7 @@ export async function POST(request) {
     }
 
     // Generate license key
-    const licenseKey = generateLicenseKey(licenseType)
+    const licenseKey = `TEMP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
     
     // Calculate license expiry
     const licenseExpiry = new Date()
@@ -237,29 +239,30 @@ export async function POST(request) {
     const defaultFeatures = getDefaultFeatures(licenseType)
 
     // Create clinic
+    const clinicData = {
+      name,
+      email,
+      phone,
+      address,
+      city: city || null,
+      state: state || null,
+      zipCode: zipCode || null,
+      country,
+      timezone,
+      currency,
+      licenseKey,
+      licenseType,
+      licenseStatus: 'ACTIVE',
+      licenseExpiry,
+      activationEmail: email,
+      businessHours: getDefaultBusinessHours(),
+      features: { ...defaultFeatures, ...features }
+    }
+    
+    console.log('Creating clinic with data:', JSON.stringify(clinicData, null, 2))
+    
     const clinic = await prisma.clinic.create({
-      data: {
-        name,
-        email,
-        phone,
-        address,
-        city: city || null,
-        state: state || null,
-        zipCode: zipCode || null,
-        country,
-        timezone,
-        currency,
-        licenseKey,
-        licenseType,
-        licenseStatus: 'ACTIVE',
-        licenseExpiry,
-        activationEmail: email,
-        businessHours: getDefaultBusinessHours(),
-        features: { ...defaultFeatures, ...features },
-        maxUsers,
-        maxPatients,
-        maxStorage
-      }
+      data: clinicData
     })
 
     // Create admin user for the clinic if email and password provided
@@ -305,8 +308,9 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error creating clinic:', error)
+    console.error('Error details:', JSON.stringify(error, null, 2))
     return NextResponse.json(
-      { success: false, error: 'Failed to create clinic' },
+      { success: false, error: `Failed to create clinic: ${error.message || error}` },
       { status: 500 }
     )
   }

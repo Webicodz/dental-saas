@@ -79,6 +79,11 @@ export async function POST(request) {
 
     // STEP 7: Create user in database
     // CODEIGNITER: $this->db->insert('users', $data)
+    
+    // For SUPER_ADMIN, clinicId is not required
+    const userRole = role || 'RECEPTIONIST';
+    const userClinicId = userRole === 'SUPER_ADMIN' ? null : (clinicId || null);
+    
     const newUser = await prisma.user.create({
       data: {
         firstName,
@@ -86,8 +91,8 @@ export async function POST(request) {
         email,
         password: hashedPassword, // Store HASHED password, not plain text!
         phone: phone || null,
-        role: role || 'RECEPTIONIST', // Default role
-        clinicId: clinicId || null,
+        role: userRole,
+        clinicId: userClinicId,
         status: 'ACTIVE',
         loginCount: 0
       },

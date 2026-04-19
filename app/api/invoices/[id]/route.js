@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authenticate, authError } from '@/lib/middleware';
 
 // GET /api/invoices/[id] - Get invoice details
 export async function GET(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { id } = params;
@@ -17,7 +16,7 @@ export async function GET(request, { params }) {
     const invoice = await prisma.invoice.findFirst({
       where: {
         id,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
       include: {
         patient: {
@@ -58,10 +57,10 @@ export async function GET(request, { params }) {
 // PUT /api/invoices/[id] - Update invoice
 export async function PUT(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { id } = params;
@@ -79,7 +78,7 @@ export async function PUT(request, { params }) {
     const existingInvoice = await prisma.invoice.findFirst({
       where: {
         id,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
     });
 
@@ -157,10 +156,10 @@ export async function PUT(request, { params }) {
 // DELETE /api/invoices/[id] - Cancel invoice
 export async function DELETE(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { id } = params;
@@ -169,7 +168,7 @@ export async function DELETE(request, { params }) {
     const existingInvoice = await prisma.invoice.findFirst({
       where: {
         id,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
       include: {
         payments: true,

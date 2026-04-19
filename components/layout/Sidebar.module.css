@@ -24,6 +24,13 @@
   justify-content: space-between;
   padding: 20px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.collapsed .logoSection {
+  flex-direction: column;
+  padding: 16px 0;
+  gap: 16px;
 }
 
 .logo {
@@ -64,7 +71,7 @@
 }
 
 .collapsed .collapseBtn {
-  display: none;
+  /* display: none; removed so user can expand the sidebar */
 }
 
 .mobileCloseBtn {

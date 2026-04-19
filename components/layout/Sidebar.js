@@ -29,11 +29,17 @@ const menuItems = {
     { id: 'appointments', label: 'Appointments', icon: Calendar, href: '/appointments' },
     { id: 'billing', label: 'Billing', icon: CreditCard, href: '/billing' },
   ],
+  super_admin: [
+    { id: 'admin-dashboard', label: 'Admin Dashboard', icon: LayoutDashboard, href: '/admin/dashboard' },
+    { id: 'admin-clinics', label: 'Manage Clinics', icon: Building2, href: '/admin/clinics' },
+    { id: 'admin-users', label: 'Manage Users', icon: UserCog, href: '/admin/users' },
+    { id: 'admin-licenses', label: 'License Management', icon: Settings, href: '/admin/license' },
+  ],
   admin: [
+    { id: 'doctors', label: 'Doctors', icon: Stethoscope, href: '/doctors' },
+    { id: 'staff', label: 'Staff', icon: Users, href: '/clinic/users' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/analytics' },
-    { id: 'clinic-settings', label: 'Clinic Settings', icon: Building2, href: '/clinic/settings' },
-    { id: 'clinic-users', label: 'User Management', icon: UserCog, href: '/clinic/users' },
-    { id: 'admin', label: 'Super Admin', icon: Settings, href: '/admin' },
+    { id: 'clinic-settings', label: 'Settings', icon: Settings, href: '/clinic/settings' },
   ],
   doctor: [
     { id: 'doctors', label: 'Doctors', icon: Stethoscope, href: '/doctors' },
@@ -53,16 +59,20 @@ export default function Sidebar({ user, collapsed = false, onToggle, mobileOpen 
     const role = user?.role || 'RECEPTIONIST';
     const roleKey = role.toLowerCase();
     
-    let items = [...(menuItems.all || [])];
+    let items = [];
     
-    // Add role-specific items
-    if (menuItems[roleKey]) {
-      items = [...items, ...menuItems[roleKey]];
-    }
-    
-    // Admin gets access to everything
-    if (role === 'ADMIN') {
-      items = [...items, ...(menuItems.admin || [])];
+    // SUPER_ADMIN gets their own dedicated menu (full system access)
+    if (role === 'SUPER_ADMIN') {
+      items = [...(menuItems.super_admin || [])];
+    } else if (role === 'ADMIN') {
+      // Clinic ADMIN gets base menu + admin-specific items
+      items = [...(menuItems.all || []), ...(menuItems.admin || [])];
+    } else {
+      // Regular users (DOCTOR, RECEPTIONIST) get base menu + role-specific items
+      items = [...(menuItems.all || [])];
+      if (menuItems[roleKey]) {
+        items = [...items, ...menuItems[roleKey]];
+      }
     }
     
     return items;

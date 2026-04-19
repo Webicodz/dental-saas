@@ -18,16 +18,16 @@ import { authenticate, authError, forbiddenError } from '@/lib/middleware'
  */
 function requireSuperAdmin(request) {
   const user = authenticate(request)
-  
+
   if (!user) {
     return { authorized: false, error: 'Authentication required', user: null }
   }
 
   if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
-    return { 
-      authorized: false, 
+    return {
+      authorized: false,
       error: 'Super Admin access required',
-      user 
+      user
     }
   }
 
@@ -41,7 +41,7 @@ function requireSuperAdmin(request) {
 export async function GET(request, { params }) {
   try {
     const { authorized, user, error } = requireSuperAdmin(request)
-    
+
     if (!authorized) {
       return user ? forbiddenError(error) : authError(error)
     }
@@ -217,7 +217,7 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { authorized, user, error } = requireSuperAdmin(request)
-    
+
     if (!authorized) {
       return user ? forbiddenError(error) : authError(error)
     }
@@ -255,11 +255,32 @@ export async function PUT(request, { params }) {
       }
     }
 
+    if (updateData.licenseType === 'TEMPORARY' && (!existingClinic.licenseKey || !existingClinic.licenseKey.startsWith('TEMP-'))) {
+      updateData.licenseKey = `TEMP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+    }
+
     // Update clinic
     const clinic = await prisma.clinic.update({
       where: { id },
       data: updateData
     })
+
+    // Update admin password if provided
+    if (body.adminPassword) {
+      const { hashPassword } = await import('@/lib/auth')
+      const hashedPassword = await hashPassword(body.adminPassword)
+
+      const adminUser = await prisma.user.findFirst({
+        where: { clinicId: id, role: 'ADMIN' }
+      })
+
+      if (adminUser) {
+        await prisma.user.update({
+          where: { id: adminUser.id },
+          data: { password: hashedPassword }
+        })
+      }
+    }
 
     // Log the action
     await prisma.auditLog.create({
@@ -269,7 +290,7 @@ export async function PUT(request, { params }) {
         action: 'UPDATE',
         entity: 'CLINIC',
         entityId: id,
-        details: { updatedFields: Object.keys(updateData) }
+        newValues: { updatedFields: Object.keys(updateData) }
       }
     })
 
@@ -304,7 +325,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { authorized, user, error } = requireSuperAdmin(request)
-    
+
     if (!authorized) {
       return user ? forbiddenError(error) : authError(error)
     }
@@ -317,8 +338,8 @@ export async function DELETE(request, { params }) {
 
     if (confirmation !== 'true') {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Confirmation required. Add ?confirm=true to delete.',
           warning: 'This will permanently delete all clinic data including users, patients, appointments, and invoices.'
         },
@@ -362,19 +383,23 @@ export async function DELETE(request, { params }) {
     })
 
     // Log the deletion
-    await prisma.auditLog.create({
-      data: {
-        clinicId: null, // Clinic is deleted, so no clinicId
-        userId: user.userId,
-        action: 'DELETE',
-        entity: 'CLINIC',
-        entityId: id,
-        details: { 
-          clinicName: clinic.name,
-          deletedData: deletionStats
+    try {
+      await prisma.auditLog.create({
+        data: {
+          clinicId: id, // Fallback to id though the record is deleted
+          userId: user.userId,
+          action: 'DELETE',
+          entity: 'CLINIC',
+          entityId: id,
+          oldValues: {
+            clinicName: clinic.name,
+            deletedData: deletionStats
+          }
         }
-      }
-    })
+      })
+    } catch (auditError) {
+      console.warn('Could not save audit log for deleted clinic', auditError)
+    }
 
     return NextResponse.json({
       success: true,

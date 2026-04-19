@@ -5,9 +5,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { authenticate, authError } from '@/lib/middleware';
+import prisma from '@/lib/prisma';
 import { 
   getNotifications, 
   createNotification, 
@@ -22,13 +21,10 @@ import {
  */
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
     const { searchParams } = new URL(request.url);
@@ -37,7 +33,7 @@ export async function GET(request) {
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
     const type = searchParams.get('type');
 
-    const result = await getNotifications(session.user.id, {
+    const result = await getNotifications(user.userId, {
       page,
       limit,
       unreadOnly,
@@ -60,22 +56,19 @@ export async function GET(request) {
  */
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
     // Check if user has permission to create notifications
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.userId },
       select: { role: true, clinicId: true },
     });
 
-    if (!user || !['ADMIN', 'DOCTOR', 'RECEPTIONIST'].includes(user.role)) {
+    if (!dbUser || !['ADMIN', 'DOCTOR', 'RECEPTIONIST'].includes(dbUser.role)) {
       return NextResponse.json(
         { error: 'Forbidden - Insufficient permissions' },
         { status: 403 }
@@ -108,7 +101,7 @@ export async function POST(request) {
         data: data || {},
         priority: priority || PRIORITY.MEDIUM,
         channels: channels || [CHANNELS.IN_APP],
-        clinicId: clinicId || user.clinicId,
+        clinicId: clinicId || dbUser.clinicId,
       });
 
       return NextResponse.json({
@@ -123,7 +116,7 @@ export async function POST(request) {
 
     if (allPatients) {
       const patients = await prisma.patient.findMany({
-        where: { clinicId: user.clinicId },
+        where: { clinicId: dbUser.clinicId },
         include: { user: true },
       });
       recipients.push(...patients.filter(p => p.user).map(p => p.user.id));
@@ -131,7 +124,7 @@ export async function POST(request) {
 
     if (allStaff) {
       const staff = await prisma.user.findMany({
-        where: { clinicId: user.clinicId },
+        where: { clinicId: dbUser.clinicId },
       });
       recipients.push(...staff.map(s => s.id));
     }
@@ -163,7 +156,7 @@ export async function POST(request) {
           data: data || {},
           priority: priority || PRIORITY.MEDIUM,
           channels: channels || [CHANNELS.IN_APP],
-          clinicId: clinicId || user.clinicId,
+          clinicId: clinicId || dbUser.clinicId,
         });
         results.success.push(recipientId);
       } catch (error) {

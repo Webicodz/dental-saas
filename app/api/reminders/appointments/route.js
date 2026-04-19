@@ -7,9 +7,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { authenticate, authError } from '@/lib/middleware';
+import prisma from '@/lib/prisma';
 import { createAppointmentReminder, getNotificationSettings } from '@/lib/notifications';
 
 /**
@@ -18,22 +17,19 @@ import { createAppointmentReminder, getNotificationSettings } from '@/lib/notifi
  */
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
     // Only staff can schedule reminders
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.userId },
       select: { role: true, clinicId: true },
     });
 
-    if (!user || !['ADMIN', 'DOCTOR', 'RECEPTIONIST'].includes(user.role)) {
+    if (!dbUser || !['ADMIN', 'DOCTOR', 'RECEPTIONIST'].includes(dbUser.role)) {
       return NextResponse.json(
         { error: 'Forbidden - Insufficient permissions' },
         { status: 403 }
@@ -145,13 +141,10 @@ export async function POST(request) {
  */
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
     const { searchParams } = new URL(request.url);
@@ -165,12 +158,12 @@ export async function GET(request) {
     };
 
     // Get user's clinic
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.userId },
       select: { clinicId: true, role: true },
     });
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -178,8 +171,8 @@ export async function GET(request) {
     }
 
     // Filter by clinic if not admin
-    if (user.role !== 'ADMIN' && clinicId !== user.clinicId) {
-      where.clinicId = user.clinicId;
+    if (dbUser.role !== 'ADMIN' && clinicId !== dbUser.clinicId) {
+      where.clinicId = dbUser.clinicId;
     } else if (clinicId) {
       where.clinicId = clinicId;
     }

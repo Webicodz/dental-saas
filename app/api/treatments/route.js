@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authenticate, authError } from '@/lib/middleware';
 
 // GET /api/treatments - List treatments with filters
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { searchParams } = new URL(request.url);
@@ -22,7 +21,7 @@ export async function GET(request) {
 
     // Build where clause
     const where = {
-      clinicId: session.user.clinicId,
+      clinicId: user.clinicId,
     };
 
     if (patientId) {
@@ -99,10 +98,10 @@ export async function GET(request) {
 // POST /api/treatments - Create new treatment
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const body = await request.json();
@@ -153,7 +152,7 @@ export async function POST(request) {
     const patient = await prisma.patient.findFirst({
       where: {
         id: patientId,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
     });
 
@@ -168,7 +167,7 @@ export async function POST(request) {
     const doctor = await prisma.doctor.findFirst({
       where: {
         id: doctorId,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
     });
 
@@ -182,7 +181,7 @@ export async function POST(request) {
     // Create treatment
     const treatment = await prisma.treatment.create({
       data: {
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
         patientId,
         doctorId,
         appointmentId,

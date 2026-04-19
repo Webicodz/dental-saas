@@ -5,27 +5,23 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { authenticate, authError } from '@/lib/middleware';
+import prisma from '@/lib/prisma';
 import { getNotificationSettings, updateNotificationSettings } from '@/lib/notifications';
 
 /**
  * GET /api/notifications/settings
  * Get notification settings for the authenticated user
  */
-export async function GET() {
+export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
-    const settings = await getNotificationSettings(session.user.id);
+    const settings = await getNotificationSettings(user.userId);
 
     return NextResponse.json({ settings });
   } catch (error) {
@@ -43,13 +39,10 @@ export async function GET() {
  */
 export async function PUT(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
     const body = await request.json();
@@ -77,7 +70,7 @@ export async function PUT(request) {
       }
     }
 
-    const settings = await updateNotificationSettings(session.user.id, {
+    const settings = await updateNotificationSettings(user.userId, {
       emailEnabled,
       smsEnabled,
       inAppEnabled,

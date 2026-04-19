@@ -276,8 +276,8 @@ export async function PUT(request, { params }) {
         if (specialization !== undefined) doctorUpdateData.specialization = specialization
         if (licenseNumber !== undefined) doctorUpdateData.licenseNumber = licenseNumber
         if (qualification !== undefined) doctorUpdateData.qualification = qualification
-        if (experience !== undefined) doctorUpdateData.experience = experience
-        if (consultationFee !== undefined) doctorUpdateData.consultationFee = consultationFee
+        if (experience !== undefined) doctorUpdateData.experience = experience ? parseInt(experience) : null
+        if (consultationFee !== undefined) doctorUpdateData.consultationFee = consultationFee ? parseFloat(consultationFee) : null
         if (workingDays !== undefined) doctorUpdateData.workingDays = workingDays
         if (workingHours !== undefined) doctorUpdateData.workingHours = workingHours
         if (bio !== undefined) doctorUpdateData.bio = bio

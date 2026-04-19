@@ -124,14 +124,14 @@ export async function GET(request, { params }) {
         // Include appointment statistics
         appointments: {
           where: {
-            date: {
+            appointmentDate: {
               gte: new Date(new Date().setHours(0, 0, 0, 0))
             }
           },
           select: {
             id: true,
             status: true,
-            date: true
+            appointmentDate: true
           }
         }
       }
@@ -176,7 +176,7 @@ export async function GET(request, { params }) {
         where: {
           doctorId: id,
           clinicId: clinicId,
-          date: {
+          appointmentDate: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
         }

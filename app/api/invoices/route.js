@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authenticate, authError } from '@/lib/middleware';
 
 // GET /api/invoices - List invoices with filters
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { searchParams } = new URL(request.url);
@@ -23,7 +22,7 @@ export async function GET(request) {
 
     // Build where clause
     const where = {
-      clinicId: session.user.clinicId,
+      clinicId: user.clinicId,
     };
 
     if (status) {
@@ -89,10 +88,10 @@ export async function GET(request) {
 // POST /api/invoices - Create new invoice
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const body = await request.json();
@@ -126,7 +125,7 @@ export async function POST(request) {
     const patient = await prisma.patient.findFirst({
       where: {
         id: patientId,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
     });
 
@@ -155,7 +154,7 @@ export async function POST(request) {
     
     const todayCount = await prisma.invoice.count({
       where: {
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
         createdAt: {
           gte: todayStart,
           lte: todayEnd,
@@ -169,7 +168,7 @@ export async function POST(request) {
     // Create invoice
     const invoice = await prisma.invoice.create({
       data: {
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
         patientId,
         invoiceNumber,
         items,

@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authenticate, authError } from '@/lib/middleware';
 
 // POST /api/invoices/[id]/payment - Record a payment
 export async function POST(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { id } = params;
@@ -35,7 +34,7 @@ export async function POST(request, { params }) {
     const invoice = await prisma.invoice.findFirst({
       where: {
         id,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
     });
 
@@ -75,7 +74,7 @@ export async function POST(request, { params }) {
       // Create the payment record
       const payment = await tx.payment.create({
         data: {
-          clinicId: session.user.clinicId,
+          clinicId: user.clinicId,
           invoiceId: id,
           amount: paymentAmount,
           method,
@@ -143,10 +142,10 @@ export async function POST(request, { params }) {
 // GET /api/invoices/[id]/payment - Get payment history for an invoice
 export async function GET(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.clinicId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user || !user.clinicId) {
+      return authError();
     }
 
     const { id } = params;
@@ -155,7 +154,7 @@ export async function GET(request, { params }) {
     const invoice = await prisma.invoice.findFirst({
       where: {
         id,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
     });
 
@@ -169,7 +168,7 @@ export async function GET(request, { params }) {
     const payments = await prisma.payment.findMany({
       where: {
         invoiceId: id,
-        clinicId: session.user.clinicId,
+        clinicId: user.clinicId,
       },
       orderBy: { createdAt: 'desc' },
     });

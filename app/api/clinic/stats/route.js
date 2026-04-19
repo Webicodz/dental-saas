@@ -106,7 +106,7 @@ export async function GET(request) {
       prisma.appointment.count({
         where: {
           clinicId,
-          date: {
+          appointmentDate: {
             gte: today,
             lt: tomorrow
           }
@@ -117,7 +117,7 @@ export async function GET(request) {
       prisma.appointment.count({
         where: {
           clinicId,
-          date: { gte: tomorrow },
+          appointmentDate: { gte: tomorrow },
           status: { not: 'CANCELLED' }
         }
       }),
@@ -126,7 +126,7 @@ export async function GET(request) {
       prisma.appointment.count({
         where: {
           clinicId,
-          date: { gte: startOfMonth },
+          appointmentDate: { gte: startOfMonth },
           status: 'COMPLETED'
         }
       }),

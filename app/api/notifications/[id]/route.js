@@ -5,9 +5,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { authenticate, authError } from '@/lib/middleware';
+import prisma from '@/lib/prisma';
 import { markAsRead, deleteNotification } from '@/lib/notifications';
 
 /**
@@ -16,13 +15,10 @@ import { markAsRead, deleteNotification } from '@/lib/notifications';
  */
 export async function PATCH(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
     const { id } = params;
@@ -39,7 +35,7 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    if (notification.userId !== session.user.id) {
+    if (notification.userId !== user.userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -47,7 +43,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Mark as read
-    const updated = await markAsRead(id, session.user.id);
+    const updated = await markAsRead(id, user.userId);
 
     return NextResponse.json({
       success: true,
@@ -68,13 +64,10 @@ export async function PATCH(request, { params }) {
  */
 export async function DELETE(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
     const { id } = params;
@@ -91,14 +84,14 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    if (notification.userId !== session.user.id) {
+    if (notification.userId !== user.userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
       );
     }
 
-    await deleteNotification(id, session.user.id);
+    await deleteNotification(id, user.userId);
 
     return NextResponse.json({
       success: true,

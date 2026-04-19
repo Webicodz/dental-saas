@@ -123,99 +123,26 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div style={styles.container}>
-        {/* SIDEBAR */}
-        <aside style={{
-          ...styles.sidebar,
-          width: sidebarOpen ? '260px' : '70px'
-        }}>
-          <div style={styles.logo}>
-            <div style={styles.logoIcon}>🦷</div>
-            {sidebarOpen && (
-              <div>
-                <h2 style={styles.logoTitle}>DentalCare</h2>
-                <p style={styles.logoSubtitle}>Management System</p>
-              </div>
-            )}
-          </div>
+      <div style={{ padding: '24px' }}>
+        <header style={{ marginBottom: '24px' }}>
+          <h1 style={styles.pageTitle}>
+            {user?.role === 'ADMIN' && 'Clinic Overview'}
+            {user?.role === 'DOCTOR' && 'My Dashboard'}
+            {user?.role === 'RECEPTIONIST' && 'Front Desk'}
+          </h1>
+          <p style={styles.clinicName}>{user?.clinic?.name || 'Loading...'}</p>
+        </header>
 
-          <nav style={styles.nav}>
-            {navItems.map((item, index) => (
-              <a
-                key={index}
-                href={item.href}
-                style={styles.navItem}
-              >
-                <span style={styles.navIcon}>{item.icon}</span>
-                {sidebarOpen && <span style={styles.navLabel}>{item.label}</span>}
-              </a>
-            ))}
-          </nav>
-
-          <button 
-            style={styles.toggleBtn}
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? '◀' : '▶'}
-          </button>
-        </aside>
-
-        {/* MAIN CONTENT */}
-        <main style={{
-          ...styles.main,
-          marginLeft: sidebarOpen ? '260px' : '70px'
-        }}>
-          <header style={styles.header}>
-            <div style={styles.headerLeft}>
-              <h1 style={styles.pageTitle}>
-                {user?.role === 'ADMIN' && 'Clinic Overview'}
-                {user?.role === 'DOCTOR' && 'My Dashboard'}
-                {user?.role === 'RECEPTIONIST' && 'Front Desk'}
-              </h1>
-              <p style={styles.clinicName}>{user?.clinic?.name || 'Loading...'}</p>
+        <div style={styles.content}>
+          {loading ? (
+            <div style={styles.loadingState}>
+              <div style={styles.spinner}></div>
+              <p>Loading dashboard...</p>
             </div>
-
-            <div style={styles.headerRight}>
-              {user && (
-                <span style={{
-                  ...styles.roleBadge,
-                  backgroundColor: 
-                    user.role === 'ADMIN' ? '#7c3aed' :
-                    user.role === 'DOCTOR' ? '#2563eb' : '#059669'
-                }}>
-                  {user.role}
-                </span>
-              )}
-
-              {user && (
-                <div style={styles.userInfo}>
-                  <div style={styles.avatar}>
-                    {user.firstName?.[0]}{user.lastName?.[0]}
-                  </div>
-                  <div>
-                    <p style={styles.userName}>{user.firstName} {user.lastName}</p>
-                    <p style={styles.userEmail}>{user.email}</p>
-                  </div>
-                </div>
-              )}
-
-              <button style={styles.logoutBtn} onClick={handleLogout}>
-                🚪 Logout
-              </button>
-            </div>
-          </header>
-
-          <div style={styles.content}>
-            {loading ? (
-              <div style={styles.loadingState}>
-                <div style={styles.spinner}></div>
-                <p>Loading dashboard...</p>
-              </div>
-            ) : (
-              <RoleBasedDashboard user={user} stats={stats} />
-            )}
-          </div>
-        </main>
+          ) : (
+            <RoleBasedDashboard user={user} stats={stats} />
+          )}
+        </div>
       </div>
     </ProtectedRoute>
   )

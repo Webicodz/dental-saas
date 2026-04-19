@@ -12,19 +12,33 @@ const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN']
 
 /**
  * Extract JWT token from request
+ * Check both Authorization header and cookie
  */
 function getToken(request) {
+  // First try Authorization header (for API calls)
   const authHeader = request.headers.get('authorization')
   
-  if (!authHeader) {
-    return null
+  if (authHeader) {
+    if (authHeader.startsWith('Bearer ')) {
+      return authHeader.substring(7)
+    }
+    return authHeader
   }
 
-  if (authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7)
+  // Fallback to cookie (for page navigation after login)
+  const cookieHeader = request.headers.get('cookie')
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      acc[key] = value
+      return acc
+    }, {})
+    if (cookies.auth_token) {
+      return cookies.auth_token
+    }
   }
 
-  return authHeader
+  return null
 }
 
 /**

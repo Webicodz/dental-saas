@@ -48,7 +48,7 @@ export async function GET(request) {
             address: true,
             phone: true,
             email: true,
-            status: true
+            licenseStatus: true
           }
         },
         // Include doctor profile if user is a DOCTOR
@@ -58,10 +58,7 @@ export async function GET(request) {
             specialization: true,
             licenseNumber: true,
             consultationFee: true,
-            availableDays: true,
-            startTime: true,
-            endTime: true,
-            status: true
+            isActive: true
           }
         }
       }

@@ -16,6 +16,7 @@ export default function ClinicsPage() {
   
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [selectedClinic, setSelectedClinic] = useState(null)
   const [showDetailsDrawer, setShowDetailsDrawer] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -33,6 +34,21 @@ export default function ClinicsPage() {
     adminPassword: ''
   })
   const [creating, setCreating] = useState(false)
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    licenseType: 'STANDARD',
+    isActive: true,
+    adminPassword: ''
+  })
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     fetchClinics()
@@ -95,6 +111,53 @@ export default function ClinicsPage() {
       alert('Failed to create clinic')
     } finally {
       setCreating(false)
+    }
+  }
+
+  const openEditModal = (clinic) => {
+    setEditForm({
+      id: clinic.id,
+      name: clinic.name || '',
+      email: clinic.email || '',
+      phone: clinic.phone || '',
+      address: clinic.address || '',
+      city: clinic.city || '',
+      state: clinic.state || '',
+      licenseType: clinic.licenseType || 'STANDARD',
+      isActive: clinic.licenseStatus === 'ACTIVE',
+      adminPassword: ''
+    })
+    setShowEditModal(true)
+  }
+
+  const handleEditClinic = async (e) => {
+    e.preventDefault()
+    setEditing(true)
+    
+    try {
+      const payload = { ...editForm, licenseStatus: editForm.isActive ? 'ACTIVE' : 'SUSPENDED' }
+      if (!payload.adminPassword) {
+        delete payload.adminPassword
+      }
+      delete payload.isActive
+      
+      const res = await fetch(`/api/admin/clinics/${payload.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      const result = await res.json()
+      
+      if (result.success) {
+        setShowEditModal(false)
+        fetchClinics()
+      } else {
+        alert(result.error)
+      }
+    } catch (err) {
+      alert('Failed to update clinic')
+    } finally {
+      setEditing(false)
     }
   }
 
@@ -315,15 +378,15 @@ export default function ClinicsPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
-                          <Link
-                            href={`/admin/clinics/${clinic.id}`}
+                          <button
+                            onClick={() => openEditModal(clinic)}
                             className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
                             title="Edit Clinic"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                          </Link>
+                          </button>
                           <button
                             onClick={() => {
                               setSelectedClinic(clinic)
@@ -458,6 +521,7 @@ export default function ClinicsPage() {
                         <option value="STANDARD">Standard</option>
                         <option value="PROFESSIONAL">Professional</option>
                         <option value="ENTERPRISE">Enterprise</option>
+                        <option value="TEMPORARY">Temporary</option>
                       </select>
                     </div>
                     <div className="col-span-2 pt-4 border-t border-gray-700">
@@ -498,6 +562,141 @@ export default function ClinicsPage() {
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                   >
                     {creating ? 'Creating...' : 'Create Clinic'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Clinic Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-900/75 transition-opacity" onClick={() => setShowEditModal(false)} />
+            
+            <div className="inline-block align-bottom bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <form onSubmit={handleEditClinic}>
+                <div className="px-6 py-4 border-b border-gray-700">
+                  <h3 className="text-lg font-medium text-white">Edit Clinic</h3>
+                </div>
+                
+                <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-400 mb-1">Clinic Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">Email *</label>
+                      <input
+                        type="email"
+                        required
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">Phone *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-400 mb-1">Address *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.address}
+                        onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">City</label>
+                      <input
+                        type="text"
+                        value={editForm.city}
+                        onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">State</label>
+                      <input
+                        type="text"
+                        value={editForm.state}
+                        onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">License Type</label>
+                      <select
+                        value={editForm.licenseType}
+                        onChange={(e) => setEditForm({ ...editForm, licenseType: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="STANDARD">Standard</option>
+                        <option value="PROFESSIONAL">Professional</option>
+                        <option value="ENTERPRISE">Enterprise</option>
+                        <option value="TEMPORARY">Temporary</option>
+                      </select>
+                    </div>
+                    <div className="col-span-2 flex items-center mt-4">
+                      <input
+                        type="checkbox"
+                        id="licenseActive"
+                        checked={editForm.isActive}
+                        onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                        className="h-5 w-5 bg-gray-700 border-gray-600 rounded text-indigo-500 focus:ring-indigo-500"
+                      />
+                      <label htmlFor="licenseActive" className="ml-3 block text-sm font-medium text-white">
+                        License Active (Uncheck to De-activate)
+                      </label>
+                    </div>
+                    <div className="col-span-2 pt-4 border-t border-gray-700">
+                      <h4 className="text-sm font-medium text-white mb-3">Reset Admin Password (Optional)</h4>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-400 mb-1">New Admin Password</label>
+                      <input
+                        type="password"
+                        placeholder="Leave blank to keep current password"
+                        value={editForm.adminPassword}
+                        onChange={(e) => setEditForm({ ...editForm, adminPassword: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="px-6 py-4 bg-gray-700/50 flex items-center justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 text-gray-300 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editing}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {editing ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>

@@ -15,6 +15,9 @@
  *   NODE_ENV - development | production
  */
 
+// Load environment variables from .env file
+require('dotenv').config();
+
 const { Client } = require('pg');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -186,31 +189,56 @@ async function seedClinic(client) {
   console.log('Seeding clinic...');
   
   const clinicId = generateId('clinic');
-  const clinic = {
-    id: clinicId,
-    ...CONFIG.defaultClinic,
-    licenseKey: 'DEMO-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
-    plan: 'PREMIUM',
-    status: 'ACTIVE',
-    settings: {
-      appointmentDuration: 30,
-      reminderHours: 24,
-      currency: 'USD',
-      taxRate: 8.875
-    }
+  const businessHours = {
+    monday: { start: '09:00', end: '18:00', closed: false },
+    tuesday: { start: '09:00', end: '18:00', closed: false },
+    wednesday: { start: '09:00', end: '18:00', closed: false },
+    thursday: { start: '09:00', end: '18:00', closed: false },
+    friday: { start: '09:00', end: '17:00', closed: false },
+    saturday: { start: '10:00', end: '14:00', closed: false },
+    sunday: null
+  };
+  
+  const features = {
+    appointmentDuration: 30,
+    reminderHours: 24,
+    currency: 'USD',
+    taxRate: 8.875
   };
   
   await client.query(
     `INSERT INTO clinics (id, name, address, city, state, "zipCode", country, phone, email, 
-     timezone, "workingHours", "licenseKey", plan, status, settings, "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())`,
-    [clinic.id, clinic.name, clinic.address, clinic.city, clinic.state, clinic.zipCode, 
-     clinic.country, clinic.phone, clinic.email, clinic.timezone, JSON.stringify(clinic.workingHours),
-     clinic.licenseKey, clinic.plan, clinic.status, JSON.stringify(clinic.settings)]
+     timezone, "businessHours", "licenseKey", "licenseType", "licenseStatus", 
+     "activationEmail", features, "logoUrl", "primaryColor", "secondaryColor",
+     "dateFormat", "timeFormat", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), NOW())`,
+    [
+      clinicId,
+      'Smile Dental Clinic',
+      '123 Healthcare Avenue',
+      'New York',
+      'NY',
+      '10001',
+      'USA',
+      '+1 (555) 123-4567',
+      'info@smiledental.com',
+      'America/New_York',
+      JSON.stringify(businessHours),
+      'DEMO-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
+      'PROFESSIONAL',
+      'ACTIVE',
+      'admin@smiledental.com',
+      JSON.stringify(features),
+      null,
+      '#2563eb',
+      '#7c3aed',
+      'MM/DD/YYYY',
+      '12h'
+    ]
   );
   
-  console.log(`Clinic created: ${clinic.name} (${clinic.id})`);
-  return clinic;
+  console.log(`Clinic created: Smile Dental Clinic (${clinicId})`);
+  return { id: clinicId };
 }
 
 async function seedUsers(client, clinicId) {
@@ -221,13 +249,19 @@ async function seedUsers(client, clinicId) {
   for (const userData of SAMPLE_USERS) {
     const userId = generateId('user');
     const passwordHash = await bcrypt.hash(userData.password, 10);
+    const nameParts = userData.name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || '';
     
     await client.query(
-      `INSERT INTO users (id, name, email, password, role, phone, specialty, "clinicId", 
+      `INSERT INTO users (id, "clinicId", "firstName", "lastName", email, phone, 
+       "avatarUrl", password, role, status, permissions, "resetToken", "resetExpiry",
+       "twoFactorEnabled", "twoFactorSecret", "lastLogin", "loginCount", 
        "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())`,
-      [userId, userData.name, userData.email, passwordHash, userData.role, 
-       userData.phone, userData.specialty, clinicId]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())`,
+      [userId, clinicId, firstName, lastName, userData.email, userData.phone,
+       null, passwordHash, userData.role, 'ACTIVE', null, null, null,
+       false, null, null, 0]
     );
     
     users.push({ ...userData, id: userId, clinicId });

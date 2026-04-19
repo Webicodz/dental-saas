@@ -303,7 +303,7 @@ export async function POST(request) {
         action: 'CREATE',
         entity: 'USER',
         entityId: newUser.id,
-        details: { 
+        newValues: { 
           createdEmail: email,
           createdRole: role,
           createdClinic: clinic.name

@@ -4,26 +4,22 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authenticate, authError } from '@/lib/middleware';
 import { getUnreadCount } from '@/lib/notifications';
 
 /**
  * GET /api/notifications/unread-count
  * Get the count of unread notifications for the authenticated user
  */
-export async function GET() {
+export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
-    const count = await getUnreadCount(session.user.id);
+    const count = await getUnreadCount(user.userId);
 
     return NextResponse.json({
       unreadCount: count,

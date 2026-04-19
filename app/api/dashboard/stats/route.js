@@ -43,8 +43,14 @@ export async function GET(request) {
     const endOfDay = new Date(today)
     endOfDay.setHours(23, 59, 59, 999)
 
-    // BASE STATS (all roles see these)
-    const baseStats = await getBaseStats(clinicId, today, tomorrow, startOfMonth, user.userId, role)
+    // BASE STATS (all roles see these, except SUPER_ADMIN)
+    let baseStats = {}
+    if (role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN sees system-wide stats
+      baseStats = await getSuperAdminStats()
+    } else {
+      baseStats = await getBaseStats(clinicId, today, tomorrow, startOfMonth, user.userId, role)
+    }
 
     // ROLE-SPECIFIC STATS
     let roleStats = {}
@@ -91,7 +97,7 @@ async function getBaseStats(clinicId, today, tomorrow, startOfMonth, userId, rol
     prisma.appointment.count({
       where: {
         clinicId,
-        date: { gte: today, lt: tomorrow }
+        appointmentDate: { gte: today, lt: tomorrow }
       }
     }),
     // Pending tasks = pending invoices + pending treatments
@@ -140,7 +146,7 @@ async function getAdminStats(clinicId, startOfMonth) {
       where: {
         clinicId,
         status: 'PAID',
-        paidDate: { gte: startOfMonth }
+        paymentDate: { gte: startOfMonth }
       },
       _sum: { total: true }
     }),
@@ -188,7 +194,7 @@ async function getAdminStats(clinicId, startOfMonth) {
       by: ['status'],
       where: {
         clinicId,
-        date: { gte: startOfMonth }
+        appointmentDate: { gte: startOfMonth }
       },
       _count: true
     }),
@@ -198,7 +204,7 @@ async function getAdminStats(clinicId, startOfMonth) {
       by: ['doctorId'],
       where: {
         clinicId,
-        date: { gte: startOfMonth },
+        appointmentDate: { gte: startOfMonth },
         status: 'COMPLETED'
       },
       _count: true,
@@ -291,7 +297,7 @@ async function getDoctorStats(clinicId, today, tomorrow, userId) {
       where: {
         doctorId: doctor.id,
         clinicId,
-        date: { gte: today, lt: tomorrow }
+        appointmentDate: { gte: today, lt: tomorrow }
       },
       include: {
         patient: {
@@ -304,7 +310,7 @@ async function getDoctorStats(clinicId, today, tomorrow, userId) {
           }
         }
       },
-      orderBy: { time: 'asc' }
+      orderBy: { startTime: 'asc' }
     }),
 
     // Upcoming appointments (next 7 days)
@@ -312,7 +318,7 @@ async function getDoctorStats(clinicId, today, tomorrow, userId) {
       where: {
         doctorId: doctor.id,
         clinicId,
-        date: { gt: tomorrow },
+        appointmentDate: { gt: tomorrow },
         status: { in: ['SCHEDULED', 'CONFIRMED'] }
       },
       include: {
@@ -325,7 +331,7 @@ async function getDoctorStats(clinicId, today, tomorrow, userId) {
           }
         }
       },
-      orderBy: [{ date: 'asc' }, { time: 'asc' }],
+      orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
       take: 10
     }),
 
@@ -406,6 +412,51 @@ async function getDoctorStats(clinicId, today, tomorrow, userId) {
   }
 }
 
+// SUPER ADMIN STATS - System-wide overview
+async function getSuperAdminStats() {
+  const [
+    totalClinics,
+    totalUsers,
+    totalPatients,
+    totalDoctors,
+    clinicsByStatus
+  ] = await Promise.all([
+    // Total clinics
+    prisma.clinic.count(),
+    
+    // Total users (all roles)
+    prisma.user.count(),
+    
+    // Total patients
+    prisma.patient.count(),
+    
+    // Total doctors
+    prisma.doctor.count(),
+    
+    // Clinics by license status
+    prisma.clinic.groupBy({
+      by: ['licenseStatus'],
+      _count: { id: true }
+    })
+  ])
+
+  return {
+    totalClinics,
+    totalUsers,
+    totalPatients,
+    totalDoctors,
+    clinicsByStatus: clinicsByStatus.map(c => ({
+      status: c.licenseStatus,
+      count: c._count.id
+    })),
+    quickActions: [
+      { label: 'Manage Clinics', href: '/admin/clinics', icon: '🏥' },
+      { label: 'Manage Users', href: '/admin/users', icon: '👥' },
+      { label: 'License Management', href: '/admin/license', icon: '🔑' }
+    ]
+  }
+}
+
 // RECEPTIONIST STATS - Front desk operations
 async function getReceptionistStats(clinicId, today, tomorrow) {
   const [
@@ -419,7 +470,7 @@ async function getReceptionistStats(clinicId, today, tomorrow) {
     prisma.appointment.findMany({
       where: {
         clinicId,
-        date: { gte: today, lt: tomorrow }
+        appointmentDate: { gte: today, lt: tomorrow }
       },
       include: {
         patient: {
@@ -437,14 +488,14 @@ async function getReceptionistStats(clinicId, today, tomorrow) {
           }
         }
       },
-      orderBy: [{ date: 'asc' }, { time: 'asc' }]
+      orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }]
     }),
 
     // Check-in queue (appointments ready for check-in)
     prisma.appointment.count({
       where: {
         clinicId,
-        date: { gte: today, lt: tomorrow },
+        appointmentDate: { gte: today, lt: tomorrow },
         status: { in: ['CONFIRMED', 'SCHEDULED'] }
       }
     }),

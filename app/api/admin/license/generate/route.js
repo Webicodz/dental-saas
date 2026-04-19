@@ -171,9 +171,6 @@ export async function POST(request) {
             licenseType,
             licenseStatus: 'ACTIVE',
             licenseExpiry: expiryDate,
-            maxUsers: config.maxUsers,
-            maxPatients: config.maxPatients,
-            maxStorage: config.maxStorage,
             features: config.features
           }
         })
@@ -182,17 +179,20 @@ export async function POST(request) {
         licenseData.activatedAt = new Date().toISOString()
       }
 
-      // Log the generation
-      await prisma.auditLog.create({
-        data: {
-          clinicId: clinicId || null,
-          userId: user.userId,
-          action: 'GENERATE',
-          entity: 'LICENSE',
-          entityId: licenseKey,
-          details: licenseData
-        }
-      })
+      // Log the generation if we have a valid clinic context
+      const logClinicId = clinicId || user.clinicId
+      if (logClinicId) {
+        await prisma.auditLog.create({
+          data: {
+            clinicId: logClinicId,
+            userId: user.userId,
+            action: 'GENERATE',
+            entity: 'LICENSE',
+            entityId: licenseKey,
+            newValues: licenseData
+          }
+        })
+      }
 
       licenses.push(licenseData)
     }

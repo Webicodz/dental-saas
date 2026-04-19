@@ -61,9 +61,11 @@ model Clinic {
   doctors           Doctor[]
   treatments        Treatment[]
   invoices          Invoice[]
+  payments          Payment[]
   apiKeys           ApiKey[]
   apiUsage          ApiUsage[]
   auditLogs         AuditLog[]
+  notifications     Notification[]
   
   @@map("clinics")
 }
@@ -74,7 +76,7 @@ model Clinic {
 
 model User {
   id            String    @id @default(uuid())
-  clinicId      String
+  clinicId      String?
   
   // Personal info
   firstName     String
@@ -85,7 +87,7 @@ model User {
   
   // Authentication
   password      String    // Hashed with bcrypt
-  role          String    // "ADMIN", "DOCTOR", "RECEPTIONIST"
+  role          String    // "SUPER_ADMIN", "ADMIN", "DOCTOR", "RECEPTIONIST"
   status        String    @default("ACTIVE") // "ACTIVE", "INACTIVE", "SUSPENDED"
   
   // Permissions
@@ -108,10 +110,11 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Relations
-  clinic        Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clinic        Clinic?   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   doctor        Doctor?   // If user is a doctor
   appointments  Appointment[] // Created by this user
   auditLogs     AuditLog[]
+  notifications Notification[]
   
   @@index([clinicId])
   @@index([email])
@@ -583,4 +586,43 @@ model SystemSetting {
   updatedAt         DateTime  @updatedAt
   
   @@map("system_settings")
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id                String    @id @default(uuid())
+  userId            String
+  clinicId          String
+  
+  // Notification content
+  title             String
+  message           String
+  type              String    // "APPOINTMENT_REMINDER", "INVOICE", "MESSAGE", etc.
+  
+  // Status
+  isRead            Boolean   @default(false)
+  readAt            DateTime?
+  
+  // Channels
+  channel           String    @default("IN_APP") // "IN_APP", "EMAIL", "SMS"
+  
+  // Related entity
+  entityType        String?
+  entityId          String?
+  
+  // Timestamp
+  createdAt         DateTime  @default(now())
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([clinicId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

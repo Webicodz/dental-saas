@@ -55,6 +55,7 @@ export default function LoginPage() {
     try {
       // CALL LOGIN API
       // This is like AJAX call in CodeIgniter/jQuery
+      console.log('[LOGIN PAGE] Sending request to /api/auth/login')
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -62,8 +63,11 @@ export default function LoginPage() {
         },
         body: JSON.stringify({ email, password }),
       })
+      
+      console.log('[LOGIN PAGE] Response received:', response.status, response.statusText)
 
       const data = await response.json()
+      console.log('[LOGIN PAGE] Response data:', { success: data.success, error: data.error })
 
       if (data.success) {
         // LOGIN SUCCESSFUL!
@@ -72,8 +76,9 @@ export default function LoginPage() {
         localStorage.setItem('token', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
         
-        // Redirect to dashboard
-        router.push('/dashboard')
+        // Use window.location for full page navigation so cookie is sent with request
+        // This allows middleware to read the auth_token cookie
+        window.location.href = data.redirectUrl || '/dashboard'
       } else {
         // LOGIN FAILED
         setError(data.error || 'Login failed')
@@ -245,8 +250,8 @@ export default function LoginPage() {
           color: '#666'
         }}>
           <strong>Demo Account:</strong><br />
-          Email: admin@demo.com<br />
-          Password: password123
+          Email: admin@dentalcare.com<br />
+          Password: admin123
         </div>
       </div>
     </div>

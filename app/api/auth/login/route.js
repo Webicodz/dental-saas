@@ -20,11 +20,23 @@ import prisma from '@/lib/prisma'
 import { comparePassword, generateToken } from '@/lib/auth'
 
 export async function POST(request) {
+  console.log('[LOGIN API] Request received at:', new Date().toISOString())
+  console.log('[LOGIN API] Request URL:', request.url)
+  console.log('[LOGIN API] Request headers:', Object.fromEntries(request.headers.entries()))
+  
   try {
     // STEP 1: Get data from request body
     // In CodeIgniter: $this->input->post('email')
+    console.log('[LOGIN API] Parsing request body...')
     const body = await request.json()
+    console.log('[LOGIN API] Request body parsed:', { email: body.email, hasPassword: !!body.password })
     const { email, password } = body
+    
+    if (!email || !password) {
+      console.log('[LOGIN API] Missing email or password')
+    } else {
+      console.log('[LOGIN API] Attempting login for email:', email)
+    }
 
     // STEP 2: Validate input
     if (!email || !password) {
@@ -37,13 +49,22 @@ export async function POST(request) {
     // STEP 3: Find user in database
     // CODEIGNITER EQUIVALENT:
     // $this->db->where('email', $email)->get('users')->row()
-    const user = await prisma.user.findUnique({
-      where: { email: email },
-      include: {
-        clinic: true, // Also get clinic info (JOIN in SQL)
-        doctor: true  // And doctor info if user is a doctor
-      }
-    })
+    console.log('[LOGIN API] Querying database for user:', email)
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { email: email },
+        include: {
+          clinic: true, // Also get clinic info (JOIN in SQL)
+          doctor: true  // And doctor info if user is a doctor
+        }
+      })
+      console.log('[LOGIN API] Database query completed. User found:', !!user)
+    } catch (dbError) {
+      console.error('[LOGIN API] Database query failed:', dbError.message)
+      console.error('[LOGIN API] Database error stack:', dbError.stack)
+      throw dbError
+    }
 
     // STEP 4: Check if user exists
     if (!user) {
@@ -92,9 +113,11 @@ export async function POST(request) {
       clinicId: user.clinicId
     })
 
-    // STEP 9: Send success response with token and user data
-    // Frontend will store this token and send it with every request
-    return NextResponse.json({
+    // Determine redirect URL based on role
+    const redirectUrl = user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : '/dashboard'
+
+    // STEP 9: Create response with cookie for middleware auth
+    const response = NextResponse.json({
       success: true,
       message: 'Login successful',
       token: token,
@@ -106,14 +129,28 @@ export async function POST(request) {
         role: user.role,
         clinicId: user.clinicId,
         clinicName: user.clinic?.name || null
-      }
+      },
+      redirectUrl
     })
+
+    // Set auth cookie for middleware to read during page navigation
+    response.cookies.set('auth_token', token, {
+      httpOnly: false, // Allow JS to read for localStorage sync
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    })
+
+    return response
 
   } catch (error) {
     // STEP 10: Handle any errors
-    console.error('Login error:', error)
+    console.error('[LOGIN API] CRITICAL ERROR:', error.message)
+    console.error('[LOGIN API] Error name:', error.name)
+    console.error('[LOGIN API] Error stack:', error.stack)
     return NextResponse.json(
-      { error: 'An error occurred during login' },
+      { error: 'An error occurred during login', details: error.message },
       { status: 500 } // 500 = Server Error
     )
   }

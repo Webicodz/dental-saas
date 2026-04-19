@@ -4,26 +4,22 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authenticate, authError } from '@/lib/middleware';
 import { markAllAsRead } from '@/lib/notifications';
 
 /**
  * POST /api/notifications/mark-all-read
  * Mark all notifications as read for the authenticated user
  */
-export async function POST() {
+export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = authenticate(request);
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return authError();
     }
 
-    const result = await markAllAsRead(session.user.id);
+    const result = await markAllAsRead(user.userId);
 
     return NextResponse.json({
       success: true,

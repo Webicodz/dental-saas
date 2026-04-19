@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { authenticate, authError } from '@/lib/middleware';
 import prisma from '@/lib/prisma';
 
 export async function GET(request) {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = authenticate(request);
+    if (!user) {
+      return authError();
     }
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d';
-    const clinicId = session.user.clinicId;
+    const clinicId = user.clinicId;
 
     // Calculate date range based on period
     const now = new Date();
@@ -60,7 +60,7 @@ export async function GET(request) {
     const totalAppointments = await prisma.appointment.count({
       where: {
         clinicId,
-        date: { gte: startDate },
+        appointmentDate: { gte: startDate },
       },
     });
 
@@ -68,7 +68,7 @@ export async function GET(request) {
     const previousAppointments = await prisma.appointment.count({
       where: {
         clinicId,
-        date: { gte: previousStartDate, lt: startDate },
+        appointmentDate: { gte: previousStartDate, lt: startDate },
       },
     });
 
@@ -109,7 +109,7 @@ export async function GET(request) {
     const completedAppointments = await prisma.appointment.count({
       where: {
         clinicId,
-        date: { gte: startDate },
+        appointmentDate: { gte: startDate },
         status: 'COMPLETED',
       },
     });
@@ -118,7 +118,7 @@ export async function GET(request) {
     const cancelledAppointments = await prisma.appointment.count({
       where: {
         clinicId,
-        date: { gte: startDate },
+        appointmentDate: { gte: startDate },
         status: 'CANCELLED',
       },
     });

@@ -55,38 +55,27 @@ A complete, modern dental practice management system with integrated AI features
 
 ## 🚀 Quick Start Installation
 
-### Option 1: Docker Installation (Recommended - 5 minutes)
+### 1. Database Requirements
+* **PostgreSQL** must be installed and running.
+* Add your connection string as `DATABASE_URL` in the `.env` file.
+
+### 2. Project Setup Steps
+
+Clone the repository and run the following commands:
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourcompany/dental-saas.git
-cd dental-saas
+npm install
+npx prisma db push
+npx prisma db seed
+npm run dev
+```
 
-# 2. Copy environment file
+### 3. Environment Variables
+Copy the example environment file:
+```bash
 cp .env.example .env
-
-# 3. Edit .env file with your settings
-nano .env
-
-# 4. Start with Docker
-docker-compose up -d
-
-# 5. Open browser
-http://localhost:3000
 ```
-
-### Option 2: Auto-Install Script (10 minutes)
-
-```bash
-# Download and run installer
-curl -sSL https://install.dentalapp.com/install.sh | bash
-
-# Follow the interactive prompts
-```
-
-### Option 3: Manual Installation (30 minutes)
-
-See [INSTALLATION.md](./INSTALLATION.md) for detailed step-by-step instructions.
+**Note:** Do NOT upload your real `.env` file to any public repositories. An `.env.example` file is included in this repository.
 
 ---
 
