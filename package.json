@@ -8,11 +8,12 @@
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "prisma db seed"
   },
   "prisma": {
     "schema": "packages/database/prisma/schema.prisma",
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} packages/database/prisma/seed.ts"
+    "seed": "ts-node packages/database/prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.9.0",
