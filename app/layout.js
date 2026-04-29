@@ -1,5 +1,8 @@
 import './globals.css';
 
+export const dynamic = "force-dynamic";
+
+
 /**
  * Root Layout Component
  * Wraps all pages with global providers and styles
